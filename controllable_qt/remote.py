@@ -1,3 +1,9 @@
+# ---------------------------------------------------
+# author: Ansh Mathur
+# gtihub: https://github.com/Fakesum
+# ---------------------------------------------------
+
+# import python std library
 import random
 import time
 import socket
@@ -5,28 +11,38 @@ import typing
 import threading
 import multiprocessing
 
+# import Qt
 from PyQt6 import (
     QtCore,
     QtWidgets,
     QtWebEngineWidgets
 )
 
+# import Some Custom Exceptions
 from .exception import DataNotGiven
 
 class Remote(QtWebEngineWidgets.QWebEngineView):
+    """
+    """
+    
+    # define class Scope Global constants.
     COMMAND_POLL_INTERVAL: float = 1
     COMMAND_RESERVED_LENGTH: int = 2
 
-    class __Nothing: pass
+    # a special None Type, this is used
+    # to distinguish whether a command 
+    # runner has returned None or wether
+    # Nothing has yet been given.
+    class __Nothing: pass # it is `__` private so that it can't be given as custom return of some kind.
     
-    def run_js(self, script: str) -> None:
-        self.page().runJavaScript(script)
+    def run_js(self, script_file_name: str) -> None:
+        self.page().runJavaScript(open(script_file_name, "r").read())
     
     def go_to_url(self, url: str) -> None:
         self.setUrl(QtCore.QUrl(url))
     
     def remote_client(self):
-        while True:
+        while self.conn:
             message = self.conn.recv(1024)
             message = message.decode('utf-8')
             self.command = message
@@ -34,7 +50,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
             while self.result == self.__Nothing:
                 time.sleep(0.5)
             
-            message.send(self.result.encode('utf-8'))
+            self.conn.send(self.result.encode('utf-8') if self.result != None else b'done')
             self.result: self.__Nothing | str = self.__Nothing
 
     def __set_timer(self):
@@ -49,7 +65,8 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         self.__set_timer()
 
         if (self.ready) and (self.command != ""):
-            self.result: self.__Nothing | str = self.STR_TO_COMMAND[self.command[:10]](self.command[10:])
+            self.result: self.__Nothing | str = self.STR_TO_COMMAND[self.command[:self.COMMAND_RESERVED_LENGTH]](self.command[self.COMMAND_RESERVED_LENGTH:])
+            self.command = ''
     
     def __set_ready(self):
         self.ready = True
