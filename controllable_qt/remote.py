@@ -1,6 +1,7 @@
 # ---------------------------------------------------
 # author: Ansh Mathur
 # gtihub: https://github.com/Fakesum
+# repo: https://github.com/Fakesum/ TODO: THIS
 # ---------------------------------------------------
 
 # import python std library
@@ -83,10 +84,13 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         except Exception as e:
             logger.exception(f"Threre was a problem when reading the script file: {script_file_name=}")
             return
+        
+        def return_callback(result):
+            self.result = result
 
         logger.info(f"Running {script=}")
         logger.trace(f"Starting to run {script=}")
-        self.page().runJavaScript(script)
+        self.page().runJavaScript(script, resultCallback=return_callback)
         logger.trace(f"Done Running {script=}")
     
     def go_to_url(self, url: str) -> None:
@@ -101,6 +105,8 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         logger.trace(f"Setting Url to {url=}")
         self.setUrl(QtCore.QUrl(url))
         logger.trace(f"Setting Url to {url=}")
+
+        self.result = None
 
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> typing.NoReturn:
@@ -149,7 +155,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         """
         # only run if a command is given and the remote worker is ready to execute it.
         if (self.ready) and (self.command != ""):
-            self.result: self.__Nothing | str = self.STR_TO_COMMAND[self.command[:self.COMMAND_RESERVED_LENGTH]](self.command[self.COMMAND_RESERVED_LENGTH:])
+            self.STR_TO_COMMAND[self.command[:self.COMMAND_RESERVED_LENGTH]](self.command[self.COMMAND_RESERVED_LENGTH:])
             self.command = '' # reset the command property when done.
         
         self.__set_timer() # set the timer for the next call.
