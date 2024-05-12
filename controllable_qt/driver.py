@@ -49,8 +49,23 @@ class Driver:
     ```
     """
 
+    # the number of charectors at the begining of the message transfer to socket
+    # that indicate which command is being given.
     COMMAND_RESERVED_LENGTH = 2
 
+    # -----------------------------------------utility functions------------------------------------------
+    @contextlib.contextmanager
+    def __temp_file(self, file_name=None):
+        if file_name == None:
+            file_name = "".join(random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", 20))
+        path = os.path.abspath(file_name)
+        open(path, "w").write("")
+        try:
+            yield path
+        finally:
+            os.remove(path)
+
+    # -------------------------------------------initialization-------------------------------------------
     def __conn_server(self) -> typing.NoReturn:
         """Server which gives commands to remote.
 
@@ -86,7 +101,6 @@ class Driver:
         Args:
             config (_type_, optional): _description_. Defaults to {"starting_url": "http://httpbin.org/get"}.
         """
-        super().__init__(daemon=True)
         self.daemon = True
         self.config = config
         self._commands = []
@@ -97,8 +111,8 @@ class Driver:
         self.COMMAND_TO_ID = {
             "js": self.__format_command(0),
             "url": self.__format_command(1),
+            "click": self.__format_command(2)
         }
-
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
         
@@ -109,14 +123,7 @@ class Driver:
 
         threading.Thread(target=self.__conn_server, daemon=True).start()
 
-    @contextlib.contextmanager
-    def __temp_file(self, file_name=None, mode="w+"):
-        if file_name == None:
-            file_name = "".join(random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", 20))
-        path = os.path.abspath(file_name)
-        yield open(path, mode), path
-        os.remove(path)
-
+    # ==============================================commands==============================================
     def execute(self, command: str, arg: str) -> str | None:
         """Execute a command directly to remote.
 
@@ -179,10 +186,10 @@ class Driver:
             str | None: The return value of the script.
         
         """
-        with self.__temp_file() as (tempfile, tempfile_name):
-            tempfile.write(script)
-            return self.execute_script_file(tempfile_name)
-    
+        with self.__temp_file() as tempfile_path:
+            open(tempfile_path, "w").write(script)
+            return self.execute_script_file(tempfile_path)
+
     def open(self, url: str) -> None:
         """open the url given in the current tab.
         returns None. uses setURL.
@@ -218,6 +225,3 @@ class Driver:
         if not url_regex.match(url):
             raise InvalidUrl(f"argument {url=} is not a valid url.")
         return self.execute("url", url)
-
-    def get_element(self, selector: str, ) -> Element:
-        pass

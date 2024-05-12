@@ -62,7 +62,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
     """
     
     # define class Scope Global constants.
-    COMMAND_POLL_INTERVAL: float = 1
+    COMMAND_POLL_INTERVAL: float = 10
     COMMAND_RESERVED_LENGTH: int = 2
 
     # a special None Type, this is used
@@ -90,7 +90,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
 
         logger.info(f"Running {script=}")
         logger.trace(f"Starting to run {script=}")
-        self.page().runJavaScript(script, resultCallback=return_callback)
+        self.page().runJavaScript(f"""(()=>{{try{{{script}}} catch {{return "JavascriptException";}};}})()""", resultCallback=return_callback)
         logger.trace(f"Done Running {script=}")
     
     def go_to_url(self, url: str) -> None:
@@ -107,6 +107,16 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         logger.trace(f"Setting Url to {url=}")
 
         self.result = None
+    
+    def click_element(self, selector: str) -> None:
+        """Sends a QMouseClick Event to the QApplication, at the point of the element.
+        The element is gotten from the selector.
+
+        Args:
+            selector (str): Selector for the element must be in the format: '<4-letter-type-code, ex: 'css ' or 'xpath'><the-actual-selector>'
+        """
+        click = QtCore.QEvent. # TODO: HERE.
+        QtWidgets.QApplication.postEvent(self, click)
 
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> typing.NoReturn:
@@ -122,7 +132,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
             self.command = message
             logger.info(f"Executing Command: {self.command[:self.COMMAND_RESERVED_LENGTH]} {self.command[self.COMMAND_RESERVED_LENGTH:]}")
             
-            while self.command != '':
+            while self.result == self.__Nothing:
                 time.sleep(0.5)
             
             self.conn.send(self.result.encode('utf-8') if self.result != None else b'done')
@@ -155,7 +165,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         """
         # only run if a command is given and the remote worker is ready to execute it.
         if (self.ready) and (self.command != ""):
-            self.STR_TO_COMMAND[self.command[:self.COMMAND_RESERVED_LENGTH]](self.command[self.COMMAND_RESERVED_LENGTH:])
+            self.STR_TO_COMMAND[self.command[:self.COMMAND_RESERVED_LENGTH]][1](self.command[self.COMMAND_RESERVED_LENGTH:])
             self.command = '' # reset the command property when done.
         
         self.__set_timer() # set the timer for the next call.
@@ -190,7 +200,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
             typing.NoReturn: When key is not found and is required, then Data Not Given Exception is triggered.
         """
         if key in self.data:
-            logger.debug(f"{self.data[key]=}")
+            logger.debug(f"{key=} {self.data[key]=}")
             return self.data[key]
         else:
             if (required):
@@ -241,8 +251,9 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         # a dict to convert from the command given in the message
         # to the function which will run it.
         self.STR_TO_COMMAND = {
-            self.__format_command(0): self.run_js,
-            self.__format_command(1): self.go_to_url
+            self.__format_command(0): ('js', self.run_js),
+            self.__format_command(1): ('url', self.go_to_url),
+            self.__format_command(2): ('click', self.click_element)
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")

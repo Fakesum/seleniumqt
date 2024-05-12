@@ -16,7 +16,20 @@ if not os.path.exists("./logs/"):
 # add sinks, backtrace and diagnose + Enqueue all.
 
 # colorize to the terminal
-logger.add(sys.stdout, format=FORMAT, colorize=True, backtrace=True, diagnose=True, enqueue=True)
+logger.add(
+    sys.stdout,
+    format=FORMAT,
+    colorize=True,
+    backtrace=True,
+    diagnose=True,
+    enqueue=True
+)
 
 # no-colorize to log file.
-logger.add(open(datetime.now().strftime("logs/%d_%m_%Y_%H_%M_%S.log")), colorize=False, enqueue=True, backtrace=True, diagnose=True)
+logger.add(
+    open(datetime.now().strftime("logs/%d_%m_%Y_%H_%M_%S.log"), "w"),
+    colorize=False,
+    enqueue=True,
+    backtrace=True,
+    diagnose=True
+)
