@@ -101,7 +101,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         logger.trace(f"Setting Url to {url=}")
         self.setUrl(QtCore.QUrl(url))
         logger.trace(f"Setting Url to {url=}")
-    
+
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> typing.NoReturn:
         """This function runs in a seperate thread, here it continously listens for any
@@ -159,11 +159,13 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         """Runs once when the page is loaded.
         """
         self.ready = True
+        logger.debug(f"Done Loading, {self.page().url().toString()=}")
     
     def __unset_ready(self) -> None:
         """Runs when page loading has started.
         """
         self.ready = False
+        logger.debug(f"Starting Loading, {self.page().url().toString()=}")
     
     def __get_data(self, key: str, required: bool = False) -> typing.Any | typing.Literal[False] | typing.NoReturn:
         """Get Data From self.data, if the required key is not present then it will return False.
@@ -182,6 +184,7 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
             typing.NoReturn: When key is not found and is required, then Data Not Given Exception is triggered.
         """
         if key in self.data:
+            logger.debug(f"{self.data[key]=}")
             return self.data[key]
         else:
             if (required):
@@ -222,23 +225,27 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
 
         self.setUrl(QtCore.QUrl(self.__get_data("starting_url", True)))
 
+        # connect to the driver
         self.conn: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.connect(("localhost", self.__get_data("connection_port", True)))
 
+        # start the function which will recieve commands from the driver.
         threading.Thread(target=self.remote_client, daemon=True).start()
         
+        # a dict to convert from the command given in the message
+        # to the function which will run it.
         self.STR_TO_COMMAND = {
             self.__format_command(0): self.run_js,
             self.__format_command(1): self.go_to_url
         }
 
-        self.__set_timer()
+        logger.debug(f"{self.STR_TO_COMMAND=}")
 
         flags = self.__get_data("flags")
 
         if flags:
             # if additional window flags have been specified by the driver
-            # then use them.
+            # then apply the specifed flags.
             for flag in flags:
                 self.setWindowFlag(flag)
 
@@ -302,6 +309,11 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
                     self.showMinimized()
         else: # if the config is not given, windowed will automatically be applied.
             self.show()
+        
+        logger.trace("Starting Main Loop Timer.")
+        logger.debug(f"{self.COMMAND_POLL_INTERVAL=}")
+        self.__set_timer() # set the starting timer for the main loop
+        # this will call __recursive function every COMMAND_POLL_INTERVAL duration.
     
     # ------------------------------------------bootstrap logic-------------------------------------------
     @classmethod
@@ -313,7 +325,11 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         """
         app = QtWidgets.QApplication([__file__])
         remote = cls(data)
-        app.exec()
+
+        logger.info("Starting Main Qt Loop.")
+        return_code = (app.exec())
+        logger.warning(f"Exiting with return_code: {return_code}")
+        raise SystemExit(return_code)
     
     @classmethod
     def start_process(cls, data: dict):
@@ -327,5 +343,8 @@ class Remote(QtWebEngineWidgets.QWebEngineView):
         """
         proc = multiprocessing.Process(target=cls._start, args=(data,), daemon=True)
         proc.name = "Remote-"+("".join(random.sample(list("qwertyuiopasdfghjklzxcvbnm1234567890"), k=20)))
+        logger.debug(f"Starting {proc.name=}")
+        logger.trace(f"Starting {proc.name=}")
         proc.start()
+        logger.trace(f"Started {proc.name=}")
         return proc
