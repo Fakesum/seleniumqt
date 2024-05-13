@@ -1,4 +1,4 @@
-from controllable_qt.driver import Driver
+from seleniumqt.driver import Driver
 
 if __name__ == "__main__":
     driver = Driver({"starting_url":'http://httpbin.org/get'})

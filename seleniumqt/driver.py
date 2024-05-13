@@ -300,3 +300,5 @@ class Driver:
             self.conn_sock.close() # just in case, this should be done automatically, but just in case.
         except Exception as e:
             logger.exception(str(e))
+
+__all__ = ["Driver"]
