@@ -12,6 +12,7 @@ import typing as _typing
 import threading as _threading
 import enum as _enum
 import multiprocessing as _multiprocessing
+import importlib as _importlib
 
 # import Qt
 from PyQt6 import (
@@ -21,11 +22,7 @@ from PyQt6 import (
 )
 
 # import Some Custom Exceptions
-from .exception import (
-    InternalWidgitNotFound,
-    DataNotGiven,
-    JavascriptException
-)
+from .exception import *
 
 # import logger
 from .logger import logger
@@ -78,19 +75,37 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     # ---------------------------------------------javascript---------------------------------------------
     JAVASCRIPT_GET_ELEMENT_POS_CSS = '''
-    try{{
-        
-    }} catch (err) {{
-        
-    }}
+    (()=>{{
+        try{{
+            var elm = document.querySelector({css_selector});
+            var box = elm.getBoundingClientRect();
+            return (box.right+((box.right-box.left)/2)).toString()+','+(box.top+((box.bottom-box.top)/2)).toString();
+        }} catch (err) {{
+            return 'JavascriptException, exception: '+err.message;
+        }}
+    }})()
+    '''
+
+    JAVASCRIPT_GET_ELEMENT_POS_XPATH = '''
+    (()=>{{
+        try{{
+            var elm = document.evaluate({xpath_selector}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            var box = elm.getBoundingClientRect();
+            return (box.right+((box.right-box.left)/2)).toString()+','+(box.top+((box.bottom-box.top)/2)).toString();
+        }} catch(err){{
+            return 'JavascriptException, exception: '+err.message;
+        }}
+    }})
     '''
 
     JAVASCRIPT_EXECUTION_SHELL = '''
-    (() =>{{try {{
-        {script}
-    }} catch (err) {{
-        return 'JavascriptException, exception: '+err.message;
-    }}}})();
+    (() =>{{
+        try {{
+            {script};
+        }} catch (err) {{
+            return 'JavascriptException, exception: '+err.message;
+        }}
+    }})();
     '''
 
     CONSOLE_JAVASCRIPT = '''
@@ -112,7 +127,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     '''
 
     # -----------------------------------------utility functions------------------------------------------
-    def __get_internal_widget(self):
+    def __get_internal_widget(self) -> None:
+        """Get the Internal Widget, this is the widget where all the events are handeled."""
         for child in self.findChildren(_QtWidgets.QWidget):
             if child.metaObject().className() == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget":
                 self.__internal_widgit = child
@@ -127,17 +143,27 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         res = str(res) # convert the res to be for sure str
         # in case it is given in some other format.
 
-        try:
-            self._element_pos = res.split(",")
-        except:
+        if res.startswith("JavascriptException"):
             raise JavascriptException(res, self.__console)
+        self._element_pos = res.split(",")
     
     def __get_element_pos(self, _type: _typing.Literal['css '] | _typing.Literal['xpath'], selector: str) -> _QtCore.QPoint:
+        """Get the position of Element by selector
+
+        Args:
+            _type (_typing.Literal['css '] | _typing.Literal['xpath']): type of selector, either css or xpath
+            selector (str): selector to get the element.
+
+        Returns:
+            _QtCore.QPoint: The QPoint of the element.
+        """
         match _type:
             case "css ":
                 self.page().runJavaScript(self.JAVASCRIPT_GET_ELEMENT_POS_CSS.format(css_selector=selector), resultCallback=self.__get_element_pos_callback)
             case "xpath":
-                self.page().runJavaScript(self.JAVASCRIPT_GET_ELEMENT_POS_XPATH.format(css_selector=selector), resultCallback=self.__get_element_pos_callback)
+                self.page().runJavaScript(self.JAVASCRIPT_GET_ELEMENT_POS_XPATH.format(xpath_selector=selector), resultCallback=self.__get_element_pos_callback)
+            case _:
+                raise InvalidSelectorType(f'{_type=}')
 
     def __update_console(self, console):
         console = str(console)
@@ -273,10 +299,10 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
                 self._element_pos_started = True
                 self.__get_element_pos(selector[:4], selector[4:])
             return False
-        else:
-            self._element_pos = None
-            self._element_pos_started = False
-                
+        
+        self._element_pos = None
+        self._element_pos_started = False
+
         click = _QtCore.QEvent(_QtCore.QEvent.Type.MouseButtonPress)
         _QtWidgets.QApplication.postEvent(self, click)
         self.result = None
@@ -284,14 +310,20 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
 
     @logger.catch(reraise=True)
-    def __hide(self) -> None:
+    def __hide(self, arg: _typing.Literal['']='') -> None:
         self.hide()
         self.result = None
         return True
 
     @logger.catch(reraise=True)
-    def __show_window(self) -> None:
+    def __show_window(self, arg: _typing.Literal['']='') -> None:
         self.__show()
+        self.result = True
+        return True
+
+    @logger.catch(reraise=True)
+    def __set_page(self, page_script) -> None:
+        self.setPage(_importlib.import_module(page_script).page)
         self.result = True
         return True
 
@@ -462,7 +494,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.__format_command(1): ('url', self.go_to_url),
             self.__format_command(2): ('click', self.click_element),
             self.__format_command(3): ('hide', self.__hide),
-            self.__format_command(4): ('show', self.__show_window)
+            self.__format_command(4): ('show', self.__show_window),
+            self.__format_command(5): ('page', self.__set_page)
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")
