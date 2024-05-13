@@ -111,7 +111,9 @@ class Driver:
         self.COMMAND_TO_ID = {
             "js": self.__format_command(0),
             "url": self.__format_command(1),
-            "click": self.__format_command(2)
+            "click": self.__format_command(2),
+            "hide": self.__format_command(3),
+            'show': self.__format_command(4)
         }
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
@@ -128,7 +130,8 @@ class Driver:
     # ==============================================commands==============================================
     # first the basic commands.
 
-    def execute(self, command: str, arg: str) -> str | None:
+    @logger.catch
+    def execute(self, command: str, arg: str='') -> str | None:
         """Execute a command directly to remote.
 
         Args:
@@ -148,6 +151,7 @@ class Driver:
 
         return result
 
+    @logger.catch
     def execute_script_file(self, script_file_name) -> str | None:
         """execute the javascript in the given script file.
 
@@ -184,6 +188,7 @@ class Driver:
             raise FileNotFoundError(f"file: {script_file_name=}")
         return self.execute("js", (script_file_name))
 
+    @logger.catch
     def execute_script(self, script: str) -> str | None:
         """Execute given Script, and return the returned value from the script, converted to python.
 
@@ -214,6 +219,7 @@ class Driver:
             open(tempfile_path, "w").write(script)
             return self.execute_script_file(tempfile_path)
 
+    @logger.catch
     def open(self, url: str) -> None:
         """open the url given in the current tab.
         returns None. uses setURL.
@@ -250,7 +256,9 @@ class Driver:
             raise InvalidUrl(f"argument {url=} is not a valid url.")
         return self.execute("url", url)
 
-    def click(self, selector: str, _type: _typing.Literal['css '] | _typing.Literal['xpath']='css ', /) -> None:
+    @logger.catch
+    def click(self, selector: str, _type: _typing.Literal['css '] | _typing.Literal['xpath']='css ', /) -> None: #noqa - untested #TODO: debug here.
+
         """click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this
         click event is indistiguishable from a real click.
 
@@ -269,6 +277,23 @@ class Driver:
         """
         return self.execute('click', _type+selector)
 
+    @logger.catch
+    def hide_window(self) -> None:
+        """This will run the Window hide command.
+        # Usage
+            ```python
+            >>> # window is visible
+            >>> driver.hide_window()
+            >>> # window is no longer visible
+            ```
+        """
+        return self.execute('hide')
+
+    @logger.catch
+    def show_window(self) -> None:
+        self.execute("show")
+
+    # ----------------------------------------------cleanup-----------------------------------------------
     @_atexit.register
     def __del__(self):
         try:

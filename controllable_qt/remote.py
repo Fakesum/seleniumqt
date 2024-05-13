@@ -76,6 +76,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     # Nothing has yet been given.
     class __Nothing: pass # it is `__` private so that it can't be given as custom return of some kind.
 
+    # ---------------------------------------------javascript---------------------------------------------
     JAVASCRIPT_GET_ELEMENT_POS_CSS = '''
     try{{
         
@@ -116,6 +117,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             if child.metaObject().className() == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget":
                 self.__internal_widgit = child
                 break
+    
     def __get_element_pos_callback(self, res):
         """Callback for getting the position of elements using javascript, for click_element function.
 
@@ -141,6 +143,68 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         console = str(console)
         self.__console = console
     
+    def __show(self) -> None:
+        window_mode = self.__get_data("window_mode")
+
+        if window_mode:
+            # if window mode is given then the corresponding WindowMode will be applied.
+            match window_mode:
+                
+                # when the window_mode is given as Windowed,
+                # the window will appear windowed with the minimum
+                # width and height that QWebBrowser can have at init.
+                case WindowMode.WINDOWED:
+                    self.show()
+                
+                # with Windowed Bottom config, the window will always be below every other window.
+                case WindowMode.WINDOWED_ON_BOTTOM:
+                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnBottomHint)
+                    self.show()
+                
+                # with Windowed Top, the window will always be above all other windows.
+                case WindowMode.WINDOWED_ON_TOP:
+                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnTopHint)
+                    self.show()
+                
+                # with Fullscreen the window will take up the entirity of the screen.
+                # it will not show the top bar or the bottom windows bar.
+                # the only way to get out of this window is either to
+                # close it using Alt+F4 or Tab out with Alt+Tab
+                case WindowMode.FULLSCREEN:
+                    self.showFullScreen()
+                
+                # Acts like fullscreen but will always be below all other windows.
+                case WindowMode.FULLSCREEN_ON_BOTTOM:
+                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnBottomHint)
+                    self.showFullScreen()
+                
+                # Acts like Fullscreen but will always be above all other windows.
+                case WindowMode.FULLSCREEN_ON_TOP:
+                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnTopHint)
+                    self.showFullScreen()
+                
+                # WIth WindowMode.MAXIMIZED config, the window will open maximized with the top bar and 
+                # operating system specific UI(such as the windows bottom bar) still visible and interactable
+                # same as Maximized with with maximized button on the top bar.
+                case WindowMode.MAXIMIZED:
+                    self.showMaximized()
+                
+                # Acts like Maximized but the window will appear above all other windows.
+                case WindowMode.MAXIMIZED_ON_TOP:
+                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnTopHint)
+                    self.showMaximized()
+                
+                # Acts like Maximized but the windows will appear below all other windows.
+                case WindowMode.MAXIMIZED_ON_BOTTOM:
+                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnBottomHint)
+                    self.showMaximized()
+                
+                # This will open the window in a minized position, when unminimized it will be windowed.
+                case WindowMode.MINIMIZED:
+                    self.showMinimized()
+        else: # if the config is not given, windowed will automatically be applied.
+            self.show()
+
     # ------------------------------------command execution functions-------------------------------------
     @logger.catch(reraise=True)
     def run_js(self, script_file_name: str) -> None:
@@ -191,7 +255,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
     
     @logger.catch(reraise=True)
-    def click_element(self, selector: str) -> None:
+    def click_element(self, selector: str) -> None: #noqa - untested #TODO: debug here.
         """Sends a QMouseClick Event to the QApplication, at the point of the element.
         The element is gotten from the selector.
 
@@ -217,6 +281,18 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         _QtWidgets.QApplication.postEvent(self, click)
         self.result = None
 
+        return True
+
+    @logger.catch(reraise=True)
+    def __hide(self) -> None:
+        self.hide()
+        self.result = None
+        return True
+
+    @logger.catch(reraise=True)
+    def __show_window(self) -> None:
+        self.__show()
+        self.result = True
         return True
 
     # -------------------------------------driver communication logic-------------------------------------
@@ -384,7 +460,9 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.STR_TO_COMMAND = {
             self.__format_command(0): ('js', self.run_js),
             self.__format_command(1): ('url', self.go_to_url),
-            self.__format_command(2): ('click', self.click_element)
+            self.__format_command(2): ('click', self.click_element),
+            self.__format_command(3): ('hide', self.__hide),
+            self.__format_command(4): ('show', self.__show_window)
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")
@@ -396,67 +474,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             # then apply the specifed flags.
             for flag in flags:
                 self.setWindowFlag(flag)
-
-        window_mode = self.__get_data("window_mode")
-
-        if window_mode:
-            # if window mode is given then the corresponding WindowMode will be applied.
-            match window_mode:
-                
-                # when the window_mode is given as Windowed,
-                # the window will appear windowed with the minimum
-                # width and height that QWebBrowser can have at init.
-                case WindowMode.WINDOWED:
-                    self.show()
-                
-                # with Windowed Bottom config, the window will always be below every other window.
-                case WindowMode.WINDOWED_ON_BOTTOM:
-                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnBottomHint)
-                    self.show()
-                
-                # with Windowed Top, the window will always be above all other windows.
-                case WindowMode.WINDOWED_ON_TOP:
-                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnTopHint)
-                    self.show()
-                
-                # with Fullscreen the window will take up the entirity of the screen.
-                # it will not show the top bar or the bottom windows bar.
-                # the only way to get out of this window is either to
-                # close it using Alt+F4 or Tab out with Alt+Tab
-                case WindowMode.FULLSCREEN:
-                    self.showFullScreen()
-                
-                # Acts like fullscreen but will always be below all other windows.
-                case WindowMode.FULLSCREEN_ON_BOTTOM:
-                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnBottomHint)
-                    self.showFullScreen()
-                
-                # Acts like Fullscreen but will always be above all other windows.
-                case WindowMode.FULLSCREEN_ON_TOP:
-                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnTopHint)
-                    self.showFullScreen()
-                
-                # WIth WindowMode.MAXIMIZED config, the window will open maximized with the top bar and 
-                # operating system specific UI(such as the windows bottom bar) still visible and interactable
-                # same as Maximized with with maximized button on the top bar.
-                case WindowMode.MAXIMIZED:
-                    self.showMaximized()
-                
-                # Acts like Maximized but the window will appear above all other windows.
-                case WindowMode.MAXIMIZED_ON_TOP:
-                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnTopHint)
-                    self.showMaximized()
-                
-                # Acts like Maximized but the windows will appear below all other windows.
-                case WindowMode.MAXIMIZED_ON_BOTTOM:
-                    self.setWindowFlag(_QtCore.Qt.WindowType.WindowStaysOnBottomHint)
-                    self.showMaximized()
-                
-                # This will open the window in a minized position, when unminimized it will be windowed.
-                case WindowMode.MINIMIZED:
-                    self.showMinimized()
-        else: # if the config is not given, windowed will automatically be applied.
-            self.show()
+        
+        self.__show()
         
         logger.trace("Starting Main Loop Timer.")
         logger.debug(f"{self.COMMAND_POLL_INTERVAL=}")
