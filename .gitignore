@@ -4,5 +4,5 @@ logs/
 .tests/
 **/.tests/
 
-controllable_qt/__pycache__/*
-**/__pycache__/*
+controllable_qt\__pycache__\*
+**\__pycache__
