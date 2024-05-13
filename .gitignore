@@ -4,4 +4,4 @@ logs/
 .tests/
 **/.tests/
 
-**/*.pyc
+controllable_qt/__pycache__/*
