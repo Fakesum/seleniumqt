@@ -4,5 +4,4 @@ logs/
 .tests/
 **/.tests/
 
-/__pycache__/*
-**/__pycache__/*
+**/*.pyc
