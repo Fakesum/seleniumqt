@@ -14,6 +14,7 @@ if not os.path.exists("./logs/"):
     os.mkdir("logs")
 
 # add sinks, backtrace and diagnose + Enqueue all.
+# log level is set to trace for file, and DEBUG for stdout.
 
 # colorize to the terminal
 logger.add(
@@ -22,7 +23,8 @@ logger.add(
     colorize=True,
     backtrace=True,
     diagnose=True,
-    enqueue=True
+    enqueue=True,
+    level="DEBUG"
 )
 
 # no-colorize to log file.
@@ -31,5 +33,8 @@ logger.add(
     colorize=False,
     enqueue=True,
     backtrace=True,
-    diagnose=True
+    diagnose=True,
+    level="TRACE"
 )
+
+logger.trace("init done.")
