@@ -506,7 +506,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             data (dict): Data given to remote, by driver
 
         Returns:
-            _type_: _description_
+            _multiprocessing.Process: The _multiprocessing.Process where the remote is run.
         """
         proc = _multiprocessing.Process(target=cls._start, args=(data,), daemon=True)
         proc.name = "Remote-"+("".join(_random.sample(list("qwertyuiopasdfghjklzxcvbnm1234567890"), k=20)))
