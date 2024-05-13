@@ -105,6 +105,7 @@ class Driver:
         self.config = config
         self._commands = []
         self._results = {}
+        self.__hidden = False
         self.conn_sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
         self.conn_sock.bind(('localhost', 0))
 
@@ -279,26 +280,43 @@ class Driver:
 
     @logger.catch
     def hide_window(self) -> None:
-        """This will run the Window hide command.
+        """hide the browser window.
         # Usage
             ```python
             >>> # window is visible
             >>> driver.hide_window()
             >>> # window is no longer visible
+            >>> driver.show_window()
+            >>> # window is visible again.
             ```
         """
+        self.__hidden = True
         return self.execute('hide')
 
     @logger.catch
     def show_window(self) -> None:
-        self.execute("show")
+        """show the browser window if it is hidden.
+        # Usage
+            ```python
+            >>> # window is visible
+            >>> driver.hide_window()
+            >>> # window is no longer visible
+            >>> driver.show_window()
+            >>> # window is visible again.
+            ```
+        """
+        if self.__hidden:
+            return self.execute("show")
+        else:
+            logger.warning("Ignoring show_window command, window is not hidden.")
 
     # ----------------------------------------------cleanup-----------------------------------------------
     @_atexit.register
     def __del__(self):
         try:
             self.conn_sock.close() # just in case, this should be done automatically, but just in case.
-        except Exception as e:
+        except Exception as e: # the self.conn_sock might have already closed
+            # or the program might have crashed before defining it.
             logger.exception(str(e))
 
 __all__ = ["Driver"]
