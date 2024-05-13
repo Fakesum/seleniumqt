@@ -12,6 +12,9 @@ import typing as _typing
 import time as _time
 import contextlib as _contextlib
 
+# to do __del__ at exit.
+import atexit as _atexit
+
 # import _socket for communication with remote
 import socket as _socket
 
@@ -118,7 +121,9 @@ class Driver:
             **self.config
         })
 
-        _threading.Thread(target=self.__conn_server, daemon=True).start()
+        self.__driver_server_thread = _threading.Thread(target=self.__conn_server, daemon=True)
+        self.__driver_server_thread.name = "driver-server"
+        self.__driver_server_thread.start()
 
     # ==============================================commands==============================================
     # first the basic commands.
@@ -264,5 +269,9 @@ class Driver:
         """
         return self.execute('click', _type+selector)
 
+    @_atexit.register
     def __del__(self):
-        self.conn_sock.close() # just in case, this should be done automatically, but just in case.
+        try:
+            self.conn_sock.close() # just in case, this should be done automatically, but just in case.
+        except Exception as e:
+            logger.exception(str(e))
