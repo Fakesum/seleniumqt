@@ -1,7 +1,7 @@
 from loguru import logger
 
 # create formating
-FORMAT = "<green>{time:YYYY-MM-DD-HH:mm:ss.SSS}</green>-|-<u><level>{level:-<8}</level></u>-|-<white>{thread.name:^10}</white>---<white>{process.name:-^30}</white>-|-<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>---<b><level>{message}</level></b>"
+FORMAT = "<green>{time:YYYY-MM-DD-HH:mm:ss.SSS}</green>-|-<u><level>{level:-^8}</level></u>-|-<white>{thread.name:-^10}</white>---<white>{process.name:-^30}</white>-|-<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>---<b><level>{message}</level></b>"
 
 # remove existing sink.
 logger.remove()

@@ -5,30 +5,27 @@
 # ---------------------------------------------------
 
 # -------------------------------------import std library python--------------------------------------
-import threading
-import random
-import os
-import typing
-import time
-import contextlib
+import threading as _threading
+import random as _random
+import os as _os
+import typing as _typing
+import time as _time
+import contextlib as _contextlib
 
-# import socket for communication with remote
-import socket
+# import _socket for communication with remote
+import socket as _socket
 
-# import re for url matching, and more.
-import re
+# import _re for url matching, and more.
+import re as _re
 
 # import remote Class.
-from .remote import Remote
+from .remote import Remote as _Remote
 
 # import logger
 from .logger import logger
 
 # import exceptions
 from .exception import *
-
-class Element: 
-    pass
 
 # Driver Class.
 class Driver:
@@ -49,40 +46,40 @@ class Driver:
     ```
     """
 
-    # the number of charectors at the begining of the message transfer to socket
+    # the number of charectors at the begining of the message transfer to _socket
     # that indicate which command is being given.
     COMMAND_RESERVED_LENGTH = 2
 
     # -----------------------------------------utility functions------------------------------------------
-    @contextlib.contextmanager
+    @_contextlib.contextmanager
     def __temp_file(self, file_name=None):
         if file_name == None:
-            file_name = "".join(random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", 20))
-        path = os.path.abspath(file_name)
+            file_name = "".join(_random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", 20))
+        path = _os.path.abspath(file_name)
         open(path, "w").write("")
         try:
             yield path
         finally:
-            os.remove(path)
+            _os.remove(path)
 
     # -------------------------------------------initialization-------------------------------------------
-    def __conn_server(self) -> typing.NoReturn:
+    def __conn_server(self) -> _typing.NoReturn:
         """Server which gives commands to remote.
 
         Returns:
-            typing.NoReturn: Never Returns
+            _typing.NoReturn: Never Returns
         """
         self.conn_sock.listen()
         conn, _ = self.conn_sock.accept()
 
         while conn:
             while self._commands == []:
-                time.sleep(1)
+                _time.sleep(1)
             for command in self._commands:
                 conn.send(command.encode('utf-8'))
                 self._results.update({command:conn.recv(1024).decode('utf-8')})
             self._commands = []
-        logger.warning("Closing, Remote Connection was closed.")
+        logger.warning("Closing, _Remote Connection was closed.")
 
     def __format_command(self, command: int | str) -> str:
         """Utility Command to format number to standardized command message format.
@@ -105,7 +102,7 @@ class Driver:
         self.config = config
         self._commands = []
         self._results = {}
-        self.conn_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.conn_sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
         self.conn_sock.bind(('localhost', 0))
 
         self.COMMAND_TO_ID = {
@@ -116,14 +113,16 @@ class Driver:
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
         
-        self._remote_proc = Remote.start_process({
+        self._remote_proc = _Remote.start_process({
             "connection_port": self.conn_sock.getsockname()[1],
             **self.config
         })
 
-        threading.Thread(target=self.__conn_server, daemon=True).start()
+        _threading.Thread(target=self.__conn_server, daemon=True).start()
 
     # ==============================================commands==============================================
+    # first the basic commands.
+
     def execute(self, command: str, arg: str) -> str | None:
         """Execute a command directly to remote.
 
@@ -137,7 +136,7 @@ class Driver:
         command = self.COMMAND_TO_ID[command]+arg
         self._commands.append(command)
         while not (command in self._results):
-            time.sleep(1)
+            _time.sleep(1)
         result = self._results[command]
         
         del self._results[command]
@@ -147,16 +146,36 @@ class Driver:
     def execute_script_file(self, script_file_name) -> str | None:
         """execute the javascript in the given script file.
 
-        Args:
+        # Usage
+            ```python
+            >>> # the file to run.
+            >>>
+            >>> print(open("main.js", "r").read())
+            document.querySelector('body').innerHTML = '';
+            >>> # call the function
+            >>> driver.execute_script_file('main.js')
+
+            # -------------------------------------------------------
+
+            >>> # with return value.
+            >>> print(open("main.js", "r").read())
+            return 1;
+            >>> a = driver.execute_script_file("main.js")
+            >>>
+            >>> a
+            '1'
+            ```
+
+        # Args:
             script_file_name (str): the path of the script file name.
 
-        Raises:
+        # Raises:
             FileNotFoundError: Raised if the file is not found.
 
-        Returns:
+        # Returns:
             str | None: Whatever is Retuned by the script.
         """
-        if not os.path.exists(script_file_name):
+        if not _os.path.exists(script_file_name):
             raise FileNotFoundError(f"file: {script_file_name=}")
         return self.execute("js", (script_file_name))
 
@@ -171,13 +190,13 @@ class Driver:
             >>> # with return
             >>> a = driver.execute_script("console.log('abc'); return 1;")
             >>> print(a)
-            1
+            '1'
             >>> 
             ```
 
         # Raises:
-            JavascriptException: When there is a problem executing the javascript,
-            currently no additional info provided - TODO: Provide the reason for the javascript exception. by piping stdout/stderr from Remote process maybe?
+            JavascriptException: When there is a problem executing the javascript, The entire console,
+            is provided in the exception.
 
         # Args:
             script (str): The Javascript to execute.
@@ -208,7 +227,7 @@ class Driver:
         """
 
         # regex(s) taken from github.com/seleniumbase/seleniumbase > fixtures.page_utils.is_valid_url
-        url_regex = re.compile(
+        url_regex = _re.compile(
             r"^(?:http)s?://"  # http:// or https://
             r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+"
             r"(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain...
@@ -216,12 +235,34 @@ class Driver:
             r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
             r"(?::\d+)?"  # optional port
             r"(?:/?|[/?]\S+)$",
-            re.IGNORECASE,
+            _re.IGNORECASE,
         )
 
-        logger.debug(f"{url_regex.pattern=}, {url=}")
+        # logger.debug(f"{url_regex.pattern=}, {url=}") # this one is a bit much.
         logger.info(f"going to page: {url}")
 
         if not url_regex.match(url):
             raise InvalidUrl(f"argument {url=} is not a valid url.")
         return self.execute("url", url)
+
+    def click(self, selector: str, _type: _typing.Literal['css '] | _typing.Literal['xpath']='css ', /) -> None:
+        """click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this
+        click event is indistiguishable from a real click.
+
+        # Usage
+            ```python
+            >>> driver.click("input.pfp") # this will click the input html element with the class `pfp`.
+            ```
+
+        # Raises:
+            InternalWidgitNotFound: An Internal error which is triggred if the internal widgit which the click signal is send
+            to is not foound.
+
+        # Args:
+            selector (str): the selector for the element that is to be clicked.
+            _type (_typing.Literal['css'] | _typing.Literal['xpath], optional): in what format is the selector given, css, xpath, etc. Defaults to 'css '.
+        """
+        return self.execute('click', _type+selector)
+
+    def __del__(self):
+        self.conn_sock.close() # just in case, this should be done automatically, but just in case.
