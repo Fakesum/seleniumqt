@@ -1,3 +1,5 @@
+"""__main__.py for seleniumqt, this will start tests."""
+
 import sys
 import pathlib
 
@@ -13,14 +15,14 @@ from seleniumqt.main import main as _main
 from seleniumqt.tests.test_remote import TestRemote, unittest
 
 
-def main():  # wrapper to link pyproject.toml to, just in case seleniumqt.main:main might not be the best way.
+def main():
+    """Wrap arround seleniumqt.main for use in commandline."""
     # since this should work better.
     _main()
 
-
-if (
-    __name__ == "__main__"
-):  # always true for this file, but still good practice due to.
-    # multi-processing requiring this line to not be global, but rather bounded in some way.
-    # this is the recommended way of bounding as such.
+# always true for this file, but still good practice due to.
+# multi-processing requiring this line to not be global, 
+# but rather bounded in some way. this is the recommended
+# way of bounding as such.
+if (__name__ == "__main__"):
     unittest.main()

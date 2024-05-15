@@ -1,3 +1,5 @@
+"""module containing remote."""
+
 # ---------------------------------------------------
 # author: Ansh Mathur
 # gtihub: https://github.com/Fakesum
@@ -19,11 +21,18 @@ from PyQt6 import (
     QtCore as _QtCore,
     QtWidgets as _QtWidgets,
     QtWebEngineWidgets as _QtWebEngineWidgets,
-    QtWebEngineCore as _QtWebEngineCore
+    QtWebEngineCore as _QtWebEngineCore,
 )
 
 # import Some Custom Exceptions
-from .exception import *
+from .exception import (
+    JavascriptException,
+    InvalidSelectorType,
+    NullPageError,
+    InternalWidgitNotFound,
+    SetPageEror,
+    DataNotGiven
+)
 
 # import logger
 from .logger import logger
@@ -43,6 +52,7 @@ class WindowMode(_enum.IntEnum):
 
 
 class Remote(_QtWebEngineWidgets.QWebEngineView):
+
     """The Remote Qt Session Host.
 
     # Usage
@@ -137,14 +147,17 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         for child in self.findChildren(_QtWidgets.QWidget):
             child_meta: _typing.Any = child.metaObject()
             if child_meta == None:
-                logger.warning('one child was found with None metaObject')
+                logger.warning("one child was found with None metaObject")
                 continue
-            if (child_meta.className() == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget"):
+            if (
+                child_meta.className()
+                == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget"
+            ):
                 self.__internal_widgit = child
                 break
 
     def __get_element_pos_callback(self, res):
-        """Callback for getting the position of elements using javascript, for __click_element function.
+        """Set Callback for getting the position of elements using javascript, for __click_element function.
 
         Args:
         ----
@@ -163,7 +176,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         _type: _typing.Literal["css "] | _typing.Literal["xpath"] | str,
         selector: str,
     ) -> None:
-        """Get the position of Element by selector
+        """Set callback to Get the position of Element by selector.
 
         Args:
         ----
@@ -305,7 +318,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
                     str(self.__console),
                 )
 
-            self.result: _typing.Any = result # type: ignore
+            self.result: _typing.Any = result  # type: ignore
 
         logger.info(f"Running {script=}")
         logger.trace(f"Starting to run {script=}")
@@ -335,7 +348,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.setUrl(_QtCore.QUrl(url))
         logger.trace(f"Setting Url to {url=}")
 
-        self.result = 'done' # mypy kept saying that for some reason None can't be used here.
+        self.result = "done"  # mypy kept saying that for some reason None can't be used here.
         # since the driver isn't checking for the return value any ways, I just set it equal to 'done'
 
         return True
@@ -344,7 +357,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     def __click_element(
         self, selector: str
     ) -> bool:  # noqa - untested #TODO: debug here.
-        """Sends a QMouseClick Event to the QApplication, at the point of the element.
+        """Send a QMouseClick Event to the QApplication, at the point of the element's position.
+
         The element is gotten from the selector.
 
         Args:
@@ -368,20 +382,20 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         click = _QtCore.QEvent(_QtCore.QEvent.Type.MouseButtonPress)
         _QtWidgets.QApplication.postEvent(self, click)
-        self.result = 'done'
+        self.result = "done"
 
         return True
 
     @logger.catch(reraise=True)
     def __hide(self, arg: _typing.Literal[""] = "") -> bool:
         self.hide()
-        self.result = 'done'
+        self.result = "done"
         return True
 
     @logger.catch(reraise=True)
     def __show_window(self, arg: _typing.Literal[""] = "") -> bool:
         self.__show()
-        self.result = 'done'
+        self.result = "done"
         return True
 
     @logger.catch(reraise=True)
@@ -390,7 +404,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.setPage(_importlib.import_module(page_script).page)
         except Exception:
             raise SetPageEror(f"{page_script=}")
-        self.result = 'done'
+        self.result = "done"
         return True
 
     @logger.catch(reraise=True)
@@ -401,7 +415,9 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> None:
-        """This function runs in a seperate thread, here it continously listens for any
+        """Poll self.conn.
+        
+        This function runs in a seperate thread, here it continously listens for any
         commands that are given by the driver, and updates the self.command property
         accordingly.
         """
@@ -426,7 +442,9 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.close()  # when the connection is close we want qt to close as well.
 
     def __set_timer(self) -> None:
-        """This function deletes any exsiting timers and sets a new timer for
+        """Set slef.timer for recurrent function.
+        
+        This function deletes any exsiting timers and sets a new timer for
         COMMAND_POLL_INTERVAL _time, upon the completion of which the recurrent function
         is run.
         """
@@ -443,8 +461,9 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.timer.timeout.connect(self.__recurrent)
 
     def __recurrent(self) -> None:
-        """This is the main loop of the remote worker, it is run in the same thread amd process.
-        it is run once every COMMAND_POLL_INTERVAL by the timer.
+        """Poll to check for commands.
+
+        runs in the same thread and process as qt. it is run once every COMMAND_POLL_INTERVAL by the timer.
         """
         # only run if a command is given and the remote worker is ready to execute it.
         if (self.ready) and (self.command != ""):
@@ -472,14 +491,22 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     # ----------------------------------------initialization logic----------------------------------------
     def __set_ready(self) -> None:
-        """Runs once when the page is loaded."""
+        """Run once when the page is loaded.
+        
+        to set self.ready and log that the page is done loading.
+        """
         self.ready = True
         logger.debug(f"Done Loading, {self.__ensure_page().url().toString()=}")
 
     def __unset_ready(self) -> None:
-        """Runs when page loading has started."""
+        """Run when page loading has started.
+        
+        to set self.ready and log that the page has started loading.
+        """
         self.ready = False
-        logger.debug(f"Starting Loading, {self.__ensure_page().url().toString()=}")
+        logger.debug(
+            f"Starting Loading, {self.__ensure_page().url().toString()=}"
+        )
 
     def __get_data(
         self, key: str, required: bool = False
@@ -514,7 +541,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             return False
 
     def __format_command(self, command: int | str) -> str:
-        """Utility Command to format number to standardized command message format.
+        """Format number to standardized command message format.
 
         Args:
         ----
@@ -530,7 +557,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         )
 
     def __init__(self, data: dict) -> None:
-        """The Constructor for Remote.
+        """Construct for Remote.
 
         Args:
         ----
@@ -613,7 +640,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     # ------------------------------------------bootstrap logic-------------------------------------------
     @classmethod
     def _start(cls, data: dict):
-        """Starts the main Qt loop
+        """Start the main Qt loop.
 
         Args:
         ----
@@ -621,7 +648,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         """
         app = _QtWidgets.QApplication([__file__])
-        remote = cls(data)
+        
+        remote = cls(data) # noqa: F841 # this is because qt works in weird and mysterious ways.
 
         logger.info("Starting Main Qt Loop.")
         return_code = app.exec()

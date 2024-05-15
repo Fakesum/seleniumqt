@@ -1,3 +1,5 @@
+"""define a custom logger for seleniumqt."""
+
 from loguru import logger
 
 # create formating

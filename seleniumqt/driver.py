@@ -1,3 +1,5 @@
+"""driver module, to communicate with remote qt instance."""
+
 # ---------------------------------------------------
 # author: Ansh Mathur
 # gtihub: https://github.com/Fakesum
@@ -25,11 +27,15 @@ from .remote import Remote as _Remote
 from .logger import logger
 
 # import exceptions
-from .exception import *
+from .exception import (
+    RemoteExited,
+    InvalidUrl
+)
 
 
 # Driver Class.
 class Driver:
+
     """Driver Class, allows for multithreaded control of remote class.
 
     # Usage
@@ -89,7 +95,7 @@ class Driver:
         logger.warning("Closing, _Remote Connection was closed.")
 
     def __format_command(self, command: int | str) -> str:
-        """Utility Command to format number to standardized command message format.
+        """Format command_id to a standardized format.
 
         Args:
         ----
@@ -110,7 +116,7 @@ class Driver:
             "starting_url": "http://httpbin.org/get"
         },
     ) -> None:
-        """Constructor for Driver
+        """Construct Driver.
 
         Args:
         ----
@@ -122,7 +128,9 @@ class Driver:
         self._commands: list = []
         self._results: dict[str, _typing.Any] = {}
         self.__hidden = False
-        self.conn_sock: _socket.socket = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+        self.conn_sock: _socket.socket = _socket.socket(
+            _socket.AF_INET, _socket.SOCK_STREAM
+        )
         self.conn_sock.bind(("localhost", 0))
 
         self.COMMAND_TO_ID = {
@@ -167,7 +175,7 @@ class Driver:
 
         command = self.COMMAND_TO_ID[command] + arg
         self._commands.append(command)
-        while not (command in self._results):
+        while command not in self._results:
             _time.sleep(1)
         result = self._results[command]
 
@@ -245,8 +253,7 @@ class Driver:
 
     @logger.catch
     def open(self, url: str) -> None:
-        """Open the url given in the current tab.
-        returns None. uses setURL.
+        """Open the url given in the current tab. returns None. uses setURL.
 
         # Usage
             ```python
@@ -286,8 +293,7 @@ class Driver:
         _type: _typing.Literal["css "] | _typing.Literal["xpath"] = "css ",
         /,
     ) -> None:  # noqa - untested #TODO: debug here.
-        """Click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this
-        click event is indistiguishable from a real click.
+        """Click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this click event is indistiguishable from a real click.
 
         # Usage
             ```python
@@ -307,6 +313,7 @@ class Driver:
     @logger.catch
     def hide_window(self) -> None:
         """Hide the browser window.
+        
         # Usage
             ```python
             >>> # window is visible
@@ -322,6 +329,7 @@ class Driver:
     @logger.catch
     def show_window(self) -> None:
         """Show the browser window if it is hidden.
+
         # Usage
             ```python
             >>> # window is visible
@@ -340,6 +348,7 @@ class Driver:
 
     # ----------------------------------------------cleanup-----------------------------------------------
     def __del__(self):
+        """Close connection socket."""
         try:
             self.conn_sock.close()  # just in case, this should be done automatically, but just in case.
         except Exception as e:  # the self.conn_sock might have already closed
