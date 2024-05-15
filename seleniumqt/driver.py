@@ -139,6 +139,9 @@ class Driver:
             "click": self.__format_command(2),
             "hide": self.__format_command(3),
             "show": self.__format_command(4),
+            "page": self.__format_command(5),
+            "close": self.__format_command(6),
+            "current_url": self.__format_command(7)
         }
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
@@ -156,7 +159,7 @@ class Driver:
     # ==============================================commands==============================================
     # first the basic commands.
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def execute(self, command: str, arg: str = "") -> str | None:
         """Execute a command directly to remote.
 
@@ -183,7 +186,7 @@ class Driver:
 
         return result
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def execute_script_file(self, script_file_name) -> str | None:
         """Execute the javascript in the given script file.
 
@@ -220,7 +223,7 @@ class Driver:
             raise FileNotFoundError(f"file: {script_file_name=}")
         return self.execute("js", (script_file_name))
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def execute_script(self, script: str) -> str | None:
         """Execute given Script, and return the returned value from the script, converted to python.
 
@@ -251,7 +254,7 @@ class Driver:
             open(tempfile_path, "w").write(script)
             return self.execute_script_file(tempfile_path)
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def open(self, url: str) -> None:
         """Open the url given in the current tab. returns None. uses setURL.
 
@@ -286,7 +289,7 @@ class Driver:
             raise InvalidUrl(f"argument {url=} is not a valid url.")
         self.execute("url", url)
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def click(
         self,
         selector: str,
@@ -310,7 +313,7 @@ class Driver:
         """
         self.execute("click", _type + selector)
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def hide_window(self) -> None:
         """Hide the browser window.
         
@@ -326,14 +329,14 @@ class Driver:
         self.__hidden = True
         self.execute("hide")
 
-    @logger.catch
+    @logger.catch(reraise=True)
     def show_window(self) -> None:
         """Show the browser window if it is hidden.
 
         # Usage
             ```python
             >>> # window is visible
-            >>> driver.hide_window()
+            >>> driver.hide_window()`
             >>> # window is no longer visible
             >>> driver.show_window()
             >>> # window is visible again.
@@ -345,6 +348,21 @@ class Driver:
             logger.warning(
                 "Ignoring show_window command, window is not hidden."
             )
+    
+    @logger.catch(reraise=True)
+    def set_page(self,custom_page_file: str) -> None:
+        self.execute("page", custom_page_file)
+    
+    @logger.catch(reraise=True)
+    def quit(self) -> None:
+        self.execute('close')
+    
+    @logger.catch(reraise=True)
+    def close(self) -> None:
+        self.execute('close')
+    
+    def current_url(self):
+        self.execute("current_url")
 
     # ----------------------------------------------cleanup-----------------------------------------------
     def __del__(self):

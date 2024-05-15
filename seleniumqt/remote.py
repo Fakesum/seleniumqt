@@ -142,19 +142,10 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     """
 
     # -----------------------------------------utility functions------------------------------------------
-    def __get_internal_widget(self) -> None:
-        """Get the Internal Widget, this is the widget where all the events are handeled."""
-        for child in self.findChildren(_QtWidgets.QWidget):
-            child_meta: _typing.Any = child.metaObject()
-            if child_meta == None:
-                logger.warning("one child was found with None metaObject")
-                continue
-            if (
-                child_meta.className()
-                == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget"
-            ):
-                self.__internal_widgit = child
-                break
+
+    def __raise(self, e: Exception):
+        logger.exception(str(e))
+        self.__raise(e)
 
     def __get_element_pos_callback(self, res):
         """Set Callback for getting the position of elements using javascript, for __click_element function.
@@ -168,7 +159,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         # in case it is given in some other format.
 
         if res.startswith("JavascriptException"):
-            raise JavascriptException(res, self.__console)
+            self.__raise(JavascriptException(res, self.__console))
         self._element_pos = res.split(",")
 
     def __get_element_pos(
@@ -200,7 +191,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
                     resultCallback=self.__get_element_pos_callback,
                 )
             case _:
-                raise InvalidSelectorType(f"{_type=}")
+                self.__raise(InvalidSelectorType(f"{_type=}"))
 
     def __update_console(self, console):
         console = str(console)
@@ -282,7 +273,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     def __ensure_page(self) -> _QtWebEngineCore.QWebEnginePage:
         page: _typing.Any = self.page()
         if page == None:
-            raise NullPageError("Page was Null")
+            self.__raise(NullPageError("Page was Null"))
         else:
             return page
 
@@ -303,7 +294,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             logger.exception(
                 f"Threre was a problem when reading the script file: {script_file_name=}"
             )
-            raise IOError(f"File: {script_file_name=} not found.")
+            self.__raise(IOError(f"File: {script_file_name=} not found."))
 
         def return_callback(result: str):
             result = str(
@@ -312,11 +303,11 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
             if result.startswith("JavascriptException"):
                 logger.exception("This Here.")
-                raise JavascriptException(
+                self.__raise(JavascriptException(
                     "There was a problem with the javascript",
                     result,
                     str(self.__console),
-                )
+                ))
 
             self.result: _typing.Any = result  # type: ignore
 
@@ -348,8 +339,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.setUrl(_QtCore.QUrl(url))
         logger.trace(f"Setting Url to {url=}")
 
-        self.result = "done"  # mypy kept saying that for some reason None can't be used here.
-        # since the driver isn't checking for the return value any ways, I just set it equal to 'done'
+        self.result = "done"
 
         return True
 
@@ -366,11 +356,6 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             selector (str): Selector for the element must be in the format: '<4-letter-type-code, ex: 'css ','xpath'><the-actual-selector>'
 
         """
-        self.__get_internal_widget()
-
-        if self.__internal_widgit == None:
-            raise InternalWidgitNotFound
-
         if self._element_pos == None:
             if not self._element_pos_started:
                 self._element_pos_started: bool = True
@@ -403,7 +388,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         try:
             self.setPage(_importlib.import_module(page_script).page)
         except Exception:
-            raise SetPageEror(f"{page_script=}")
+            self.__raise(SetPageEror(f"{page_script=}"))
         self.result = "done"
         return True
 
@@ -412,6 +397,11 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.close()
         self.conn.close()
         raise SystemExit(0)
+
+    @logger.catch(reraise=True)
+    def __current_url(self):
+        self.result = self.__ensure_page().url().toString()
+        return True
 
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> None:
@@ -535,9 +525,9 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             return self.data[key]
         else:
             if required:
-                raise DataNotGiven(
+                self.__raise(DataNotGiven(
                     f"Required Data Argument {key=} was not provided."
-                )
+                ))
             return False
 
     def __format_command(self, command: int | str) -> str:
@@ -579,9 +569,6 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self._element_pos = None
         self._element_pos_started: bool = False
 
-        # internal widgit which actual recieves all the events.
-        self.__internal_widgit = None
-
         # the result of the command given
         self.result: self.__Nothing | str | _typing.Any = self.__Nothing
 
@@ -618,6 +605,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.__format_command(4): ("show", self.__show_window),
             self.__format_command(5): ("page", self.__set_page),
             self.__format_command(6): ("close", self.__close),
+            self.__format_command(7): ("current_url", self.__current_url)
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")
