@@ -135,7 +135,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
                 break
     
     def __get_element_pos_callback(self, res):
-        """Callback for getting the position of elements using javascript, for click_element function.
+        """Callback for getting the position of elements using javascript, for __click_element function.
 
         Args:
             res (str): the resulting point.
@@ -233,7 +233,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     # ------------------------------------command execution functions-------------------------------------
     @logger.catch(reraise=True)
-    def run_js(self, script_file_name: str) -> None:
+    def __run_js(self, script_file_name: str) -> None:
         """Execute the Given Javascript file.
         Args:
             script_file_name (str): the path to the javascript file which is to be run.
@@ -264,7 +264,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
     
     @logger.catch(reraise=True)
-    def go_to_url(self, url: str) -> None:
+    def __go_to_url(self, url: str) -> None:
         """Change the url as per the argument given with setUrl.
 
         Args:
@@ -281,7 +281,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
     
     @logger.catch(reraise=True)
-    def click_element(self, selector: str) -> None: #noqa - untested #TODO: debug here.
+    def __click_element(self, selector: str) -> None: #noqa - untested #TODO: debug here.
         """Sends a QMouseClick Event to the QApplication, at the point of the element.
         The element is gotten from the selector.
 
@@ -322,10 +322,19 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
 
     @logger.catch(reraise=True)
-    def __set_page(self, page_script) -> None:
-        self.setPage(_importlib.import_module(page_script).page)
+    def __set_page(self, page_script: str) -> None:
+        try:
+            self.setPage(_importlib.import_module(page_script).page)
+        except Exception as e:
+            raise SetPageEror(f"{page_script=}")
         self.result = True
         return True
+    
+    @logger.catch(reraise=True)
+    def __close(self, arg: _typing.Literal[''] = '') -> None:
+        self.close()
+        self.conn.close()
+        raise SystemExit(0)
 
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> _typing.NoReturn:
@@ -490,12 +499,13 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         # a dict to convert from the command given in the message
         # to the function which will run it.
         self.STR_TO_COMMAND = {
-            self.__format_command(0): ('js', self.run_js),
-            self.__format_command(1): ('url', self.go_to_url),
-            self.__format_command(2): ('click', self.click_element),
+            self.__format_command(0): ('js', self.__run_js),
+            self.__format_command(1): ('url', self.__go_to_url),
+            self.__format_command(2): ('click', self.__click_element),
             self.__format_command(3): ('hide', self.__hide),
             self.__format_command(4): ('show', self.__show_window),
-            self.__format_command(5): ('page', self.__set_page)
+            self.__format_command(5): ('page', self.__set_page),
+            self.__format_command(6): ('close', self.__close)
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")
@@ -550,7 +560,5 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return proc
 
 __all__ = [
-    "InternalWidgitNotFound",
-    "DataNotGiven",
     "Remote"
 ]
