@@ -10,8 +10,8 @@ from datetime import datetime
 import os
 import sys
 
-if not os.path.exists("./logs/"):
-    os.mkdir("logs")
+if not os.path.exists("./.log"):
+    os.mkdir(".log")
 
 # add sinks, backtrace and diagnose + Enqueue all.
 # log level is set to trace for file, and DEBUG for stdout.
@@ -24,17 +24,17 @@ logger.add(
     backtrace=True,
     diagnose=True,
     enqueue=True,
-    level="DEBUG"
+    level="DEBUG",
 )
 
 # no-colorize to log file.
 logger.add(
-    open(datetime.now().strftime("logs/%d_%m_%Y_%H_%M_%S.log"), "w"),
+    open(datetime.now().strftime("./.log/%d_%m_%Y_%H_%M_%S.log"), "w"),
     colorize=False,
     enqueue=True,
     backtrace=True,
     diagnose=True,
-    level="TRACE"
+    level="TRACE",
 )
 
 logger.trace("init done.")

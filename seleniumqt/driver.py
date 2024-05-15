@@ -12,9 +12,6 @@ import typing as _typing
 import time as _time
 import contextlib as _contextlib
 
-# to do __del__ at exit.
-import atexit as _atexit
-
 # import _socket for communication with remote
 import socket as _socket
 
@@ -30,8 +27,10 @@ from .logger import logger
 # import exceptions
 from .exception import *
 
+
 # Driver Class.
 class Driver:
+
     """Driver Class, allows for multithreaded control of remote class.
 
     # Usage
@@ -41,9 +40,9 @@ class Driver:
         ... # Config given to remote, and shared by driver.
     })
     ```
-    
+
     ## how to give command to remote.
-    
+
     ```python
     driver.execute(...) # see execute function for more info.
     ```
@@ -57,7 +56,9 @@ class Driver:
     @_contextlib.contextmanager
     def __temp_file(self, file_name=None):
         if file_name == None:
-            file_name = "".join(_random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", 20))
+            file_name = "".join(
+                _random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", 20)
+            )
         path = _os.path.abspath(file_name)
         open(path, "w").write("")
         try:
@@ -69,8 +70,10 @@ class Driver:
     def __conn_server(self) -> _typing.NoReturn:
         """Server which gives commands to remote.
 
-        Returns:
+        Returns
+        -------
             _typing.NoReturn: Never Returns
+
         """
         self.conn_sock.listen()
         conn, _ = self.conn_sock.accept()
@@ -79,8 +82,10 @@ class Driver:
             while self._commands == []:
                 _time.sleep(1)
             for command in self._commands:
-                conn.send(command.encode('utf-8'))
-                self._results.update({command:conn.recv(1024).decode('utf-8')})
+                conn.send(command.encode("utf-8"))
+                self._results.update(
+                    {command: conn.recv(1024).decode("utf-8")}
+                )
             self._commands = []
         logger.warning("Closing, _Remote Connection was closed.")
 
@@ -88,18 +93,30 @@ class Driver:
         """Utility Command to format number to standardized command message format.
 
         Args:
+        ----
             command (int | str): Command name/id
 
         Returns:
+        -------
             str: formated/standardized command message format.
-        """
-        return (f"{{command:0>{self.COMMAND_RESERVED_LENGTH}}}").format(command=command)
 
-    def __init__(self, config: dict[str, list | str | int]={"starting_url": "http://httpbin.org/get"}) -> None:
+        """
+        return (f"{{command:0>{self.COMMAND_RESERVED_LENGTH}}}").format(
+            command=command
+        )
+
+    def __init__(
+        self,
+        config: dict[str, list | str | int] = {
+            "starting_url": "http://httpbin.org/get"
+        },
+    ) -> None:
         """Constructor for Driver
 
         Args:
+        ----
             config (_type_, optional): _description_. Defaults to {"starting_url": "http://httpbin.org/get"}.
+
         """
         self.daemon = True
         self.config = config
@@ -107,24 +124,25 @@ class Driver:
         self._results = {}
         self.__hidden = False
         self.conn_sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
-        self.conn_sock.bind(('localhost', 0))
+        self.conn_sock.bind(("localhost", 0))
 
         self.COMMAND_TO_ID = {
             "js": self.__format_command(0),
             "url": self.__format_command(1),
             "click": self.__format_command(2),
             "hide": self.__format_command(3),
-            'show': self.__format_command(4)
+            "show": self.__format_command(4),
         }
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
-        
-        self._remote_proc = _Remote.start_process({
-            "connection_port": self.conn_sock.getsockname()[1],
-            **self.config
-        })
 
-        self.__driver_server_thread = _threading.Thread(target=self.__conn_server, daemon=True)
+        self._remote_proc = _Remote.start_process(
+            {"connection_port": self.conn_sock.getsockname()[1], **self.config}
+        )
+
+        self.__driver_server_thread = _threading.Thread(
+            target=self.__conn_server, daemon=True
+        )
         self.__driver_server_thread.name = "driver-server"
         self.__driver_server_thread.start()
 
@@ -132,29 +150,35 @@ class Driver:
     # first the basic commands.
 
     @logger.catch
-    def execute(self, command: str, arg: str='') -> str | None:
+    def execute(self, command: str, arg: str = "") -> str | None:
         """Execute a command directly to remote.
 
         Args:
+        ----
             command (str): Command name, ex: js, all names are given in self.COMMAND_TO_ID
             arg (str): string argument to give to remote
 
         Returns:
+        -------
             str | None: _description_
+
         """
-        command = self.COMMAND_TO_ID[command]+arg
+        if not self._remote_proc.is_alive():
+            raise RemoteExited(f"{self._remote_proc.pid=} has exited.")
+
+        command = self.COMMAND_TO_ID[command] + arg
         self._commands.append(command)
         while not (command in self._results):
             _time.sleep(1)
         result = self._results[command]
-        
+
         del self._results[command]
 
         return result
 
     @logger.catch
     def execute_script_file(self, script_file_name) -> str | None:
-        """execute the javascript in the given script file.
+        """Execute the javascript in the given script file.
 
         # Usage
             ```python
@@ -202,7 +226,7 @@ class Driver:
             >>> a = driver.execute_script("console.log('abc'); return 1;")
             >>> print(a)
             '1'
-            >>> 
+            >>>
             ```
 
         # Raises:
@@ -214,7 +238,7 @@ class Driver:
 
         # Returns:
             str | None: The return value of the script.
-        
+
         """
         with self.__temp_file() as tempfile_path:
             open(tempfile_path, "w").write(script)
@@ -222,7 +246,7 @@ class Driver:
 
     @logger.catch
     def open(self, url: str) -> None:
-        """open the url given in the current tab.
+        """Open the url given in the current tab.
         returns None. uses setURL.
 
         # Usage
@@ -230,14 +254,13 @@ class Driver:
             >>> driver.open("https://www.google.com/") # this will open the url.
             >>> driver.open('my purse') # this will throw a InvalidUrl Exception.
             ```
-        
+
         # Raises:
             InvalidUrl: raised when the url is detected to be invalid.
 
         # Args:
             url (str): open the url in the current tab.
         """
-
         # regex(s) taken from github.com/seleniumbase/seleniumbase > fixtures.page_utils.is_valid_url
         url_regex = _re.compile(
             r"^(?:http)s?://"  # http:// or https://
@@ -258,9 +281,13 @@ class Driver:
         return self.execute("url", url)
 
     @logger.catch
-    def click(self, selector: str, _type: _typing.Literal['css '] | _typing.Literal['xpath']='css ', /) -> None: #noqa - untested #TODO: debug here.
-
-        """click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this
+    def click(
+        self,
+        selector: str,
+        _type: _typing.Literal["css "] | _typing.Literal["xpath"] = "css ",
+        /,
+    ) -> None:  # noqa - untested #TODO: debug here.
+        """Click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this
         click event is indistiguishable from a real click.
 
         # Usage
@@ -276,11 +303,11 @@ class Driver:
             selector (str): the selector for the element that is to be clicked.
             _type (_typing.Literal['css'] | _typing.Literal['xpath], optional): in what format is the selector given, css, xpath, etc. Defaults to 'css '.
         """
-        return self.execute('click', _type+selector)
+        return self.execute("click", _type + selector)
 
     @logger.catch
     def hide_window(self) -> None:
-        """hide the browser window.
+        """Hide the browser window.
         # Usage
             ```python
             >>> # window is visible
@@ -291,11 +318,11 @@ class Driver:
             ```
         """
         self.__hidden = True
-        return self.execute('hide')
+        return self.execute("hide")
 
     @logger.catch
     def show_window(self) -> None:
-        """show the browser window if it is hidden.
+        """Show the browser window if it is hidden.
         # Usage
             ```python
             >>> # window is visible
@@ -308,15 +335,17 @@ class Driver:
         if self.__hidden:
             return self.execute("show")
         else:
-            logger.warning("Ignoring show_window command, window is not hidden.")
+            logger.warning(
+                "Ignoring show_window command, window is not hidden."
+            )
 
     # ----------------------------------------------cleanup-----------------------------------------------
-    @_atexit.register
     def __del__(self):
         try:
-            self.conn_sock.close() # just in case, this should be done automatically, but just in case.
-        except Exception as e: # the self.conn_sock might have already closed
+            self.conn_sock.close()  # just in case, this should be done automatically, but just in case.
+        except Exception as e:  # the self.conn_sock might have already closed
             # or the program might have crashed before defining it.
             logger.exception(str(e))
+
 
 __all__ = ["Driver"]

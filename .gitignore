@@ -6,4 +6,6 @@ logs/
 
 .sphinxautodoc/
 
+*.egg*
+
 **/__pycache__
