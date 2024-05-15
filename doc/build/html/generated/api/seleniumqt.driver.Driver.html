@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>seleniumqt.driver.Driver &mdash; seleniumqt 0.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=7026087e"></script>
+        <script src="../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+              <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">seleniumqt.driver.Driver</a><ul>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver"><code class="docutils literal notranslate"><span class="pre">Driver</span></code></a><ul>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.__init__"><code class="docutils literal notranslate"><span class="pre">Driver.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.click"><code class="docutils literal notranslate"><span class="pre">Driver.click()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.execute"><code class="docutils literal notranslate"><span class="pre">Driver.execute()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.execute_script"><code class="docutils literal notranslate"><span class="pre">Driver.execute_script()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.execute_script_file"><code class="docutils literal notranslate"><span class="pre">Driver.execute_script_file()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.hide_window"><code class="docutils literal notranslate"><span class="pre">Driver.hide_window()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.open"><code class="docutils literal notranslate"><span class="pre">Driver.open()</span></code></a></li>
+<li><a class="reference internal" href="#seleniumqt.driver.Driver.show_window"><code class="docutils literal notranslate"><span class="pre">Driver.show_window()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">seleniumqt</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">seleniumqt.driver.Driver</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/generated/api/seleniumqt.driver.Driver.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="seleniumqt-driver-driver">
+<h1>seleniumqt.driver.Driver<a class="headerlink" href="#seleniumqt-driver-driver" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">seleniumqt.driver.</span></span><span class="sig-name descname"><span class="pre">Driver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'starting_url':</span> <span class="pre">'http://httpbin.org/get'}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Driver Class, allows for multithreaded control of remote class.</p>
+<p># Usage
+## How to Create Driver
+<a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
+driver = Driver({</p>
+<blockquote>
+<div><p>… # Config given to remote, and shared by driver.</p>
+</div></blockquote>
+<section id="id5">
+<h2>})<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p>## how to give command to remote.</p>
+<p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">driver.execute(...)</span> <span class="pre">#</span> <span class="pre">see</span> <span class="pre">execute</span> <span class="pre">function</span> <span class="pre">for</span> <span class="pre">more</span> <span class="pre">info.</span>
+<span class="pre">`</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'starting_url':</span> <span class="pre">'http://httpbin.org/get'}</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.__init__" title="Link to this definition"></a></dt>
+<dd><p>Constructor for Driver</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>_type_</em><em>, </em><em>optional</em>) – _description_. Defaults to {“starting_url”: “<a class="reference external" href="http://httpbin.org/get">http://httpbin.org/get</a>”}.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.__init__" title="seleniumqt.driver.Driver.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([config])</p></td>
+<td><p>Constructor for Driver</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.click" title="seleniumqt.driver.Driver.click"><code class="xref py py-obj docutils literal notranslate"><span class="pre">click</span></code></a>(selector[, _type])</p></td>
+<td><p>click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.execute" title="seleniumqt.driver.Driver.execute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">execute</span></code></a>(command[, arg])</p></td>
+<td><p>Execute a command directly to remote.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.execute_script" title="seleniumqt.driver.Driver.execute_script"><code class="xref py py-obj docutils literal notranslate"><span class="pre">execute_script</span></code></a>(script)</p></td>
+<td><p>Execute given Script, and return the returned value from the script, converted to python.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.execute_script_file" title="seleniumqt.driver.Driver.execute_script_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">execute_script_file</span></code></a>(script_file_name)</p></td>
+<td><p>execute the javascript in the given script file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.hide_window" title="seleniumqt.driver.Driver.hide_window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hide_window</span></code></a>()</p></td>
+<td><p>hide the browser window. # Usage     <code class="docutils literal notranslate"><span class="pre">`python</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.hide_window()</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">no</span> <span class="pre">longer</span> <span class="pre">visible</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.show_window()</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span> <span class="pre">again.</span> <span class="pre">`</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.open" title="seleniumqt.driver.Driver.open"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open</span></code></a>(url)</p></td>
+<td><p>open the url given in the current tab.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#seleniumqt.driver.Driver.show_window" title="seleniumqt.driver.Driver.show_window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_window</span></code></a>()</p></td>
+<td><p>show the browser window if it is hidden. # Usage     <code class="docutils literal notranslate"><span class="pre">`python</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.hide_window()</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">no</span> <span class="pre">longer</span> <span class="pre">visible</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.show_window()</span>&#160;&#160;&#160;&#160; <span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span> <span class="pre">again.</span> <span class="pre">`</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">COMMAND_RESERVED_LENGTH</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.click">
+<span class="sig-name descname"><span class="pre">click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">selector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'css</span> <span class="pre">'</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'xpath'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'css</span> <span class="pre">'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.click"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.click" title="Link to this definition"></a></dt>
+<dd><p>click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this
+click event is indistiguishable from a real click.</p>
+<dl class="simple">
+<dt># Usage</dt><dd><p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.click(&quot;input.pfp&quot;)</span> <span class="pre">#</span> <span class="pre">this</span> <span class="pre">will</span> <span class="pre">click</span> <span class="pre">the</span> <span class="pre">input</span> <span class="pre">html</span> <span class="pre">element</span> <span class="pre">with</span> <span class="pre">the</span> <span class="pre">class</span> <span class="pre">`pfp`.</span>
+<span class="pre">`</span></code></p>
+</dd>
+<dt># Raises:</dt><dd><p>InternalWidgitNotFound: An Internal error which is triggred if the internal widgit which the click signal is send
+to is not foound.</p>
+</dd>
+<dt># Args:</dt><dd><p>selector (str): the selector for the element that is to be clicked.
+_type (_typing.Literal[‘css’] | _typing.Literal[‘xpath], optional): in what format is the selector given, css, xpath, etc. Defaults to ‘css ‘.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.execute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.execute" title="Link to this definition"></a></dt>
+<dd><p>Execute a command directly to remote.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> (<em>str</em>) – Command name, ex: js, all names are given in self.COMMAND_TO_ID</p></li>
+<li><p><strong>arg</strong> (<em>str</em>) – string argument to give to remote</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>_description_</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.execute_script">
+<span class="sig-name descname"><span class="pre">execute_script</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">script</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.execute_script"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.execute_script" title="Link to this definition"></a></dt>
+<dd><p>Execute given Script, and return the returned value from the script, converted to python.</p>
+<dl class="simple">
+<dt># Usage</dt><dd><p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">without</span> <span class="pre">return</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.execute_script(&quot;console.log('abc')&quot;)</span>
+<span class="pre">&gt;&gt;&gt;</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">with</span> <span class="pre">return</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">a</span> <span class="pre">=</span> <span class="pre">driver.execute_script(&quot;console.log('abc');</span> <span class="pre">return</span> <span class="pre">1;&quot;)</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">print(a)</span>
+<span class="pre">'1'</span>
+<span class="pre">&gt;&gt;&gt;</span>
+<span class="pre">`</span></code></p>
+</dd>
+<dt># Raises:</dt><dd><p>JavascriptException: When there is a problem executing the javascript, The entire console,
+is provided in the exception.</p>
+</dd>
+<dt># Args:</dt><dd><p>script (str): The Javascript to execute.</p>
+</dd>
+<dt># Returns:</dt><dd><p>str | None: The return value of the script.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.execute_script_file">
+<span class="sig-name descname"><span class="pre">execute_script_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">script_file_name</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.execute_script_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.execute_script_file" title="Link to this definition"></a></dt>
+<dd><p>execute the javascript in the given script file.</p>
+<dl>
+<dt># Usage</dt><dd><p><a href="#id6"><span class="problematic" id="id7">``</span></a><a href="#id8"><span class="problematic" id="id9">`</span></a>python
+&gt;&gt;&gt; # the file to run.
+&gt;&gt;&gt;
+&gt;&gt;&gt; print(open(“main.js”, “r”).read())
+document.querySelector(‘body’).innerHTML = ‘’;
+&gt;&gt;&gt; # call the function
+&gt;&gt;&gt; driver.execute_script_file(‘main.js’)</p>
+<p># ——————————————————-</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># with return value.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;main.js&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="go">return 1;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">execute_script_file</span><span class="p">(</span><span class="s2">&quot;main.js&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">&#39;1&#39;</span>
+<span class="go">```</span>
+</pre></div>
+</div>
+</dd>
+<dt># Args:</dt><dd><p>script_file_name (str): the path of the script file name.</p>
+</dd>
+<dt># Raises:</dt><dd><p>FileNotFoundError: Raised if the file is not found.</p>
+</dd>
+<dt># Returns:</dt><dd><p>str | None: Whatever is Retuned by the script.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.hide_window">
+<span class="sig-name descname"><span class="pre">hide_window</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.hide_window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.hide_window" title="Link to this definition"></a></dt>
+<dd><p>hide the browser window.
+# Usage</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.hide_window()</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">no</span> <span class="pre">longer</span> <span class="pre">visible</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.show_window()</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span> <span class="pre">again.</span>
+<span class="pre">`</span></code></p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.open">
+<span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.open"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.open" title="Link to this definition"></a></dt>
+<dd><p>open the url given in the current tab.
+returns None. uses setURL.</p>
+<dl class="simple">
+<dt># Usage</dt><dd><p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.open(&quot;https://www.google.com/&quot;)</span> <span class="pre">#</span> <span class="pre">this</span> <span class="pre">will</span> <span class="pre">open</span> <span class="pre">the</span> <span class="pre">url.</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.open('my</span> <span class="pre">purse')</span> <span class="pre">#</span> <span class="pre">this</span> <span class="pre">will</span> <span class="pre">throw</span> <span class="pre">a</span> <span class="pre">InvalidUrl</span> <span class="pre">Exception.</span>
+<span class="pre">`</span></code></p>
+</dd>
+<dt># Raises:</dt><dd><p>InvalidUrl: raised when the url is detected to be invalid.</p>
+</dd>
+<dt># Args:</dt><dd><p>url (str): open the url in the current tab.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="seleniumqt.driver.Driver.show_window">
+<span class="sig-name descname"><span class="pre">show_window</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/seleniumqt/driver.html#Driver.show_window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#seleniumqt.driver.Driver.show_window" title="Link to this definition"></a></dt>
+<dd><p>show the browser window if it is hidden.
+# Usage</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">`python</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.hide_window()</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">no</span> <span class="pre">longer</span> <span class="pre">visible</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">driver.show_window()</span>
+<span class="pre">&gt;&gt;&gt;</span> <span class="pre">#</span> <span class="pre">window</span> <span class="pre">is</span> <span class="pre">visible</span> <span class="pre">again.</span>
+<span class="pre">`</span></code></p>
+</div></blockquote>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Ansh Mathur.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

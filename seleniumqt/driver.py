@@ -30,7 +30,6 @@ from .exception import *
 
 # Driver Class.
 class Driver:
-
     """Driver Class, allows for multithreaded control of remote class.
 
     # Usage
@@ -120,10 +119,10 @@ class Driver:
         """
         self.daemon = True
         self.config = config
-        self._commands = []
-        self._results = {}
+        self._commands: list = []
+        self._results: dict[str, _typing.Any] = {}
         self.__hidden = False
-        self.conn_sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+        self.conn_sock: _socket.socket = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
         self.conn_sock.bind(("localhost", 0))
 
         self.COMMAND_TO_ID = {
@@ -278,7 +277,7 @@ class Driver:
 
         if not url_regex.match(url):
             raise InvalidUrl(f"argument {url=} is not a valid url.")
-        return self.execute("url", url)
+        self.execute("url", url)
 
     @logger.catch
     def click(
@@ -303,7 +302,7 @@ class Driver:
             selector (str): the selector for the element that is to be clicked.
             _type (_typing.Literal['css'] | _typing.Literal['xpath], optional): in what format is the selector given, css, xpath, etc. Defaults to 'css '.
         """
-        return self.execute("click", _type + selector)
+        self.execute("click", _type + selector)
 
     @logger.catch
     def hide_window(self) -> None:
@@ -318,7 +317,7 @@ class Driver:
             ```
         """
         self.__hidden = True
-        return self.execute("hide")
+        self.execute("hide")
 
     @logger.catch
     def show_window(self) -> None:
@@ -333,7 +332,7 @@ class Driver:
             ```
         """
         if self.__hidden:
-            return self.execute("show")
+            self.execute("show")
         else:
             logger.warning(
                 "Ignoring show_window command, window is not hidden."

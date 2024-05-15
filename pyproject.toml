@@ -1,0 +1,88 @@
+[project]
+name = "seleniumqt"
+version = "0.0.0" # Cannot be bothered to update this, might do so when updates become more scarce.
+authors = [
+    {name = "Ansh Mathur", email = "worldanvilbild.seleniumqt@gmail.com"},
+    {name = "Ansh Mathur Alt Email", email="infiplexity.seleniumqt@gmail.com"} # an alt email address.
+]
+description = "fully undetectable and automated selenium like api for controlling a QtWebEngine Browser Instance."
+readme = "README.md"
+license = {file="LICENSE"}
+requires-python='>=3.10'
+keywords = [
+    "selenium",
+    "undetectable",
+    "chromedriver",
+    "qt",
+    "PyQt"
+]
+
+[project.scripts]
+seleniumqt = 'seleniumqt.__main__:main'
+
+[tool.black]
+line-length = 79
+
+[tool.ruff]
+line-length = 79
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+indent-width = 4
+
+# Assume Python 3.11
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["F", "D"]
+ignore = ["E402", "F401", "D211", "D213"]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[build-system]
+requires = ["setuptools>=66.1", 'wheel']
+build-backend = "setuptools.build_meta"

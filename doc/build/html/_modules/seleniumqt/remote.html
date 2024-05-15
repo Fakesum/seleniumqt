@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>seleniumqt.remote &#8212; seleniumqt 0.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for seleniumqt.remote</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ---------------------------------------------------</span>
+<span class="c1"># author: Ansh Mathur</span>
+<span class="c1"># gtihub: https://github.com/Fakesum</span>
+<span class="c1"># repo: https://github.com/Fakesum/ TODO: THIS</span>
+<span class="c1"># ---------------------------------------------------</span>
+
+<span class="c1"># import python std library</span>
+<span class="kn">import</span> <span class="nn">random</span> <span class="k">as</span> <span class="nn">_random</span>
+<span class="kn">import</span> <span class="nn">time</span> <span class="k">as</span> <span class="nn">_time</span>
+<span class="kn">import</span> <span class="nn">socket</span> <span class="k">as</span> <span class="nn">_socket</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">_typing</span>
+<span class="kn">import</span> <span class="nn">threading</span> <span class="k">as</span> <span class="nn">_threading</span>
+<span class="kn">import</span> <span class="nn">enum</span> <span class="k">as</span> <span class="nn">_enum</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">_multiprocessing</span>
+<span class="kn">import</span> <span class="nn">importlib</span> <span class="k">as</span> <span class="nn">_importlib</span>
+
+<span class="c1"># import Qt</span>
+<span class="kn">from</span> <span class="nn">PyQt6</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QtCore</span> <span class="k">as</span> <span class="n">_QtCore</span><span class="p">,</span>
+    <span class="n">QtWidgets</span> <span class="k">as</span> <span class="n">_QtWidgets</span><span class="p">,</span>
+    <span class="n">QtWebEngineWidgets</span> <span class="k">as</span> <span class="n">_QtWebEngineWidgets</span>
+<span class="p">)</span>
+
+<span class="c1"># import Some Custom Exceptions</span>
+<span class="kn">from</span> <span class="nn">.exception</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># import logger</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="kn">import</span> <span class="n">logger</span>
+
+<div class="viewcode-block" id="WindowMode">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.remote.WindowMode.html#seleniumqt.remote.WindowMode">[docs]</a>
+<span class="k">class</span> <span class="nc">WindowMode</span><span class="p">(</span><span class="n">_enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+    <span class="n">WINDOWED</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">FULLSCREEN</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">MAXIMIZED</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">MINIMIZED</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">WINDOWED_ON_TOP</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">FULLSCREEN_ON_TOP</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">MAXIMIZED_ON_TOP</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">WINDOWED_ON_BOTTOM</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">FULLSCREEN_ON_BOTTOM</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">MAXIMIZED_ON_BOTTOM</span> <span class="o">=</span> <span class="mi">9</span></div>
+
+
+<div class="viewcode-block" id="Remote">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.remote.Remote.html#seleniumqt.remote.Remote">[docs]</a>
+<span class="k">class</span> <span class="nc">Remote</span><span class="p">(</span><span class="n">_QtWebEngineWidgets</span><span class="o">.</span><span class="n">QWebEngineView</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The Remote Qt Session Host.</span>
+
+<span class="sd">    # Usage</span>
+
+<span class="sd">    How to use this class by function:</span>
+<span class="sd">    ## start</span>
+<span class="sd">    ```python</span>
+<span class="sd">    proc: _multiprocessing.Process = Remote.start_process({</span>
+<span class="sd">        # required</span>
+<span class="sd">        &quot;starting_url&quot;: ..., # url/QWebEnginePage where the remote will start</span>
+<span class="sd">        &quot;connection_port&quot;: ..., # the port where the remote will connect to, and listen to commands.</span>
+
+<span class="sd">        # optional</span>
+<span class="sd">        &quot;window_mode&quot;: ..., # one of the WindowMode _enum</span>
+<span class="sd">        &quot;flags&quot;: ..., # list of qt.WindowType Flags.</span>
+<span class="sd">        &quot;wait_for_load&quot;: ... # True or False.</span>
+<span class="sd">    })</span>
+<span class="sd">    # this will return the process Object where the Remote is running.</span>
+<span class="sd">    ```</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ---------------------------------------------constants----------------------------------------------</span>
+    <span class="c1"># define class Scope Global constants.</span>
+    <span class="n">COMMAND_POLL_INTERVAL</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># once every 100 milliseconds.</span>
+    <span class="n">COMMAND_RESERVED_LENGTH</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">CONSOLE_POLL_TIME</span> <span class="o">=</span> <span class="mi">1000</span> <span class="c1"># once every second.</span>
+
+    <span class="c1"># a special None Type, this is used</span>
+    <span class="c1"># to distinguish whether a command </span>
+    <span class="c1"># runner has returned None or wether</span>
+    <span class="c1"># Nothing has yet been given.</span>
+    <span class="k">class</span> <span class="nc">__Nothing</span><span class="p">:</span> <span class="k">pass</span> <span class="c1"># it is `__` private so that it can&#39;t be given as custom return of some kind.</span>
+
+    <span class="c1"># ---------------------------------------------javascript---------------------------------------------</span>
+    <span class="n">JAVASCRIPT_GET_ELEMENT_POS_CSS</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    (()=&gt;{{</span>
+<span class="s1">        try{{</span>
+<span class="s1">            var elm = document.querySelector(</span><span class="si">{css_selector}</span><span class="s1">);</span>
+<span class="s1">            var box = elm.getBoundingClientRect();</span>
+<span class="s1">            return (box.right+((box.right-box.left)/2)).toString()+&#39;,&#39;+(box.top+((box.bottom-box.top)/2)).toString();</span>
+<span class="s1">        }} catch (err) {{</span>
+<span class="s1">            return &#39;JavascriptException, exception: &#39;+err.message;</span>
+<span class="s1">        }}</span>
+<span class="s1">    }})()</span>
+<span class="s1">    &#39;&#39;&#39;</span>
+
+    <span class="n">JAVASCRIPT_GET_ELEMENT_POS_XPATH</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    (()=&gt;{{</span>
+<span class="s1">        try{{</span>
+<span class="s1">            var elm = document.evaluate(</span><span class="si">{xpath_selector}</span><span class="s1">, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;</span>
+<span class="s1">            var box = elm.getBoundingClientRect();</span>
+<span class="s1">            return (box.right+((box.right-box.left)/2)).toString()+&#39;,&#39;+(box.top+((box.bottom-box.top)/2)).toString();</span>
+<span class="s1">        }} catch(err){{</span>
+<span class="s1">            return &#39;JavascriptException, exception: &#39;+err.message;</span>
+<span class="s1">        }}</span>
+<span class="s1">    }})</span>
+<span class="s1">    &#39;&#39;&#39;</span>
+
+    <span class="n">JAVASCRIPT_EXECUTION_SHELL</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    (() =&gt;{{</span>
+<span class="s1">        try {{</span>
+<span class="s1">            </span><span class="si">{script}</span><span class="s1">;</span>
+<span class="s1">        }} catch (err) {{</span>
+<span class="s1">            return &#39;JavascriptException, exception: &#39;+err.message;</span>
+<span class="s1">        }}</span>
+<span class="s1">    }})();</span>
+<span class="s1">    &#39;&#39;&#39;</span>
+
+    <span class="n">CONSOLE_JAVASCRIPT</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">    (()=&gt;{{</span>
+<span class="s1">        try{{</span>
+<span class="s1">            if (!(&quot;logs&quot; in console)){{</span>
+<span class="s1">                console.slogs = console.log.bind(console);</span>
+<span class="s1">                console.logs = []</span>
+<span class="s1">                console.log = ((...args)=&gt;{{</span>
+<span class="s1">                    console.logs.push(args);</span>
+<span class="s1">                    console.slogs(...args);</span>
+<span class="s1">                }});</span>
+<span class="s1">            }};</span>
+<span class="s1">            return console.logs;</span>
+<span class="s1">        }} catch (err){{</span>
+<span class="s1">            return &quot;JavascriptException&quot;+err.message;</span>
+<span class="s1">        }}</span>
+<span class="s1">    }})()</span>
+<span class="s1">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># -----------------------------------------utility functions------------------------------------------</span>
+    <span class="k">def</span> <span class="nf">__get_internal_widget</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Internal Widget, this is the widget where all the events are handeled.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">findChildren</span><span class="p">(</span><span class="n">_QtWidgets</span><span class="o">.</span><span class="n">QWidget</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">metaObject</span><span class="p">()</span><span class="o">.</span><span class="n">className</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__internal_widgit</span> <span class="o">=</span> <span class="n">child</span>
+                <span class="k">break</span>
+    
+    <span class="k">def</span> <span class="nf">__get_element_pos_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">res</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback for getting the position of elements using javascript, for __click_element function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            res (str): the resulting point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="c1"># convert the res to be for sure str</span>
+        <span class="c1"># in case it is given in some other format.</span>
+
+        <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;JavascriptException&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">JavascriptException</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__console</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__get_element_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;css &#39;</span><span class="p">]</span> <span class="o">|</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;xpath&#39;</span><span class="p">],</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_QtCore</span><span class="o">.</span><span class="n">QPoint</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the position of Element by selector</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            _type (_typing.Literal[&#39;css &#39;] | _typing.Literal[&#39;xpath&#39;]): type of selector, either css or xpath</span>
+<span class="sd">            selector (str): selector to get the element.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            _QtCore.QPoint: The QPoint of the element.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">match</span> <span class="n">_type</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s2">&quot;css &quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">runJavaScript</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">JAVASCRIPT_GET_ELEMENT_POS_CSS</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">css_selector</span><span class="o">=</span><span class="n">selector</span><span class="p">),</span> <span class="n">resultCallback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__get_element_pos_callback</span><span class="p">)</span>
+            <span class="k">case</span> <span class="s2">&quot;xpath&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">runJavaScript</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">JAVASCRIPT_GET_ELEMENT_POS_XPATH</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">xpath_selector</span><span class="o">=</span><span class="n">selector</span><span class="p">),</span> <span class="n">resultCallback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__get_element_pos_callback</span><span class="p">)</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidSelectorType</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">_type</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__update_console</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">console</span><span class="p">):</span>
+        <span class="n">console</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">console</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__console</span> <span class="o">=</span> <span class="n">console</span>
+    
+    <span class="k">def</span> <span class="nf">__show</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">window_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_data</span><span class="p">(</span><span class="s2">&quot;window_mode&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">window_mode</span><span class="p">:</span>
+            <span class="c1"># if window mode is given then the corresponding WindowMode will be applied.</span>
+            <span class="k">match</span> <span class="n">window_mode</span><span class="p">:</span>
+                
+                <span class="c1"># when the window_mode is given as Windowed,</span>
+                <span class="c1"># the window will appear windowed with the minimum</span>
+                <span class="c1"># width and height that QWebBrowser can have at init.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">WINDOWED</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+                
+                <span class="c1"># with Windowed Bottom config, the window will always be below every other window.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">WINDOWED_ON_BOTTOM</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowType</span><span class="o">.</span><span class="n">WindowStaysOnBottomHint</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+                
+                <span class="c1"># with Windowed Top, the window will always be above all other windows.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">WINDOWED_ON_TOP</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowType</span><span class="o">.</span><span class="n">WindowStaysOnTopHint</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+                
+                <span class="c1"># with Fullscreen the window will take up the entirity of the screen.</span>
+                <span class="c1"># it will not show the top bar or the bottom windows bar.</span>
+                <span class="c1"># the only way to get out of this window is either to</span>
+                <span class="c1"># close it using Alt+F4 or Tab out with Alt+Tab</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">FULLSCREEN</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showFullScreen</span><span class="p">()</span>
+                
+                <span class="c1"># Acts like fullscreen but will always be below all other windows.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">FULLSCREEN_ON_BOTTOM</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowType</span><span class="o">.</span><span class="n">WindowStaysOnBottomHint</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showFullScreen</span><span class="p">()</span>
+                
+                <span class="c1"># Acts like Fullscreen but will always be above all other windows.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">FULLSCREEN_ON_TOP</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowType</span><span class="o">.</span><span class="n">WindowStaysOnTopHint</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showFullScreen</span><span class="p">()</span>
+                
+                <span class="c1"># WIth WindowMode.MAXIMIZED config, the window will open maximized with the top bar and </span>
+                <span class="c1"># operating system specific UI(such as the windows bottom bar) still visible and interactable</span>
+                <span class="c1"># same as Maximized with with maximized button on the top bar.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">MAXIMIZED</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showMaximized</span><span class="p">()</span>
+                
+                <span class="c1"># Acts like Maximized but the window will appear above all other windows.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">MAXIMIZED_ON_TOP</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowType</span><span class="o">.</span><span class="n">WindowStaysOnTopHint</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showMaximized</span><span class="p">()</span>
+                
+                <span class="c1"># Acts like Maximized but the windows will appear below all other windows.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">MAXIMIZED_ON_BOTTOM</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowType</span><span class="o">.</span><span class="n">WindowStaysOnBottomHint</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showMaximized</span><span class="p">()</span>
+                
+                <span class="c1"># This will open the window in a minized position, when unminimized it will be windowed.</span>
+                <span class="k">case</span> <span class="n">WindowMode</span><span class="o">.</span><span class="n">MINIMIZED</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">showMinimized</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># if the config is not given, windowed will automatically be applied.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="c1"># ------------------------------------command execution functions-------------------------------------</span>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__run_js</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the Given Javascript file.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            script_file_name (str): the path to the javascript file which is to be run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># load script from file.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">script</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">script_file_name</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Threre was a problem when reading the script file: </span><span class="si">{</span><span class="n">script_file_name</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="k">def</span> <span class="nf">return_callback</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="c1"># convert the result to str if it is given in some other format.</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;JavascriptException&quot;</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;This Here.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">JavascriptException</span><span class="p">(</span><span class="s2">&quot;There was a problem with the javascript&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__console</span><span class="p">))</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">result</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running </span><span class="si">{</span><span class="n">script</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting to run </span><span class="si">{</span><span class="n">script</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">runJavaScript</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">JAVASCRIPT_EXECUTION_SHELL</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">script</span><span class="o">=</span><span class="n">script</span><span class="p">),</span> <span class="n">resultCallback</span><span class="o">=</span><span class="n">return_callback</span><span class="p">)</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Done Running </span><span class="si">{</span><span class="n">script</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__go_to_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Change the url as per the argument given with setUrl.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            url (str): the url given by the driver.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Changing Url to </span><span class="si">{</span><span class="n">url</span><span class="si">=}</span><span class="s1"> from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">url</span><span class="p">()</span><span class="o">.</span><span class="n">toString</span><span class="p">()</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting Url to </span><span class="si">{</span><span class="n">url</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setUrl</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">QUrl</span><span class="p">(</span><span class="n">url</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Setting Url to </span><span class="si">{</span><span class="n">url</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__click_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="c1">#noqa - untested #TODO: debug here.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sends a QMouseClick Event to the QApplication, at the point of the element.</span>
+<span class="sd">        The element is gotten from the selector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            selector (str): Selector for the element must be in the format: &#39;&lt;4-letter-type-code, ex: &#39;css &#39;,&#39;xpath&#39;&gt;&lt;the-actual-selector&gt;&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__get_internal_widget</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__internal_widgit</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InternalWidgitNotFound</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos_started</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos_started</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__get_element_pos</span><span class="p">(</span><span class="n">selector</span><span class="p">[:</span><span class="mi">4</span><span class="p">],</span> <span class="n">selector</span><span class="p">[</span><span class="mi">4</span><span class="p">:])</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos_started</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">click</span> <span class="o">=</span> <span class="n">_QtCore</span><span class="o">.</span><span class="n">QEvent</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">QEvent</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">MouseButtonPress</span><span class="p">)</span>
+        <span class="n">_QtWidgets</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">postEvent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">click</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__hide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hide</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__show_window</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__show</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__set_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">page_script</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setPage</span><span class="p">(</span><span class="n">_importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">page_script</span><span class="p">)</span><span class="o">.</span><span class="n">page</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SetPageEror</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">page_script</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span><span class="p">(</span><span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># -------------------------------------driver communication logic-------------------------------------</span>
+<div class="viewcode-block" id="Remote.remote_client">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.remote.Remote.html#seleniumqt.remote.Remote.remote_client">[docs]</a>
+    <span class="k">def</span> <span class="nf">remote_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_typing</span><span class="o">.</span><span class="n">NoReturn</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This function runs in a seperate thread, here it continously listens for any</span>
+<span class="sd">        commands that are given by the driver, and updates the self.command property</span>
+<span class="sd">        accordingly.&quot;&quot;&quot;</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Started Remote Command Client&quot;</span><span class="p">)</span>
+        
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="n">message</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing Command: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_RESERVED_LENGTH</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_RESERVED_LENGTH</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">__Nothing</span><span class="p">:</span>
+                <span class="n">_time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">!=</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">b</span><span class="s1">&#39;done&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__Nothing</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__Nothing</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Closing Remote Client.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># when the connection is close we want qt to close as well.</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__set_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This function deletes any exsiting timers and sets a new timer for </span>
+<span class="sd">        COMMAND_POLL_INTERVAL _time, upon the completion of which the recurrent function</span>
+<span class="sd">        is run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># delete existing timer</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="p">,</span> <span class="n">_QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">deleteLater</span><span class="p">()</span>
+        
+        <span class="c1"># create new timer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">_QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">startTimer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_POLL_INTERVAL</span><span class="p">)</span>
+
+        <span class="c1"># start and connect new timer.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__recurrent</span><span class="p">)</span>
+    
+
+    <span class="k">def</span> <span class="nf">__recurrent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This is the main loop of the remote worker, it is run in the same thread amd process.</span>
+<span class="sd">        it is run once every COMMAND_POLL_INTERVAL by the timer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># only run if a command is given and the remote worker is ready to execute it.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ready</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">STR_TO_COMMAND</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_RESERVED_LENGTH</span><span class="p">]][</span><span class="mi">1</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_RESERVED_LENGTH</span><span class="p">:]):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="c1"># reset the command property when done.</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_timer</span><span class="p">()</span> <span class="c1"># set the timer for the next call.</span>
+    
+    <span class="k">def</span> <span class="nf">__console_recurrent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">runJavaScript</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CONSOLE_JAVASCRIPT</span><span class="p">,</span> <span class="n">resultCallback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__update_console</span><span class="p">)</span>
+
+        <span class="c1"># reset console recurrent.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span><span class="p">,</span> <span class="n">_QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span><span class="o">.</span><span class="n">deleteLater</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span> <span class="o">=</span> <span class="n">_QtCore</span><span class="o">.</span><span class="n">QTimer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span><span class="o">.</span><span class="n">startTimer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CONSOLE_POLL_TIME</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span><span class="o">.</span><span class="n">timeout</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__console_recurrent</span><span class="p">)</span>
+    
+    <span class="c1"># ----------------------------------------initialization logic----------------------------------------</span>
+    <span class="k">def</span> <span class="nf">__set_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs once when the page is loaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Done Loading, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">url</span><span class="p">()</span><span class="o">.</span><span class="n">toString</span><span class="p">()</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__unset_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs when page loading has started.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting Loading, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">page</span><span class="p">()</span><span class="o">.</span><span class="n">url</span><span class="p">()</span><span class="o">.</span><span class="n">toString</span><span class="p">()</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Any</span> <span class="o">|</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">|</span> <span class="n">_typing</span><span class="o">.</span><span class="n">NoReturn</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get Data From self.data, if the required key is not present then it will return False.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str): key for data in self.data</span>
+<span class="sd">            required (bool, optional): if a key is required for the program to function properly, then an DataNotGiven</span>
+<span class="sd">            exception is raised if it is not found. Instead of False being returned. Defaults to False.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            DataNotGiven: Exception is raised only when required=True and key is not found in self.data</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            _typing.Any: whatever the contents of self.data[key] are if key is found</span>
+<span class="sd">            _typing.Literal[False]: False if key is not found, and not required.</span>
+<span class="sd">            _typing.NoReturn: When key is not found and is required, then Data Not Given Exception is triggered.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">=}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">required</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">DataNotGiven</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Required Data Argument </span><span class="si">{</span><span class="n">key</span><span class="si">=}</span><span class="s2"> was not provided.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="nf">__format_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Utility Command to format number to standardized command message format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            command (int | str): Command name/id</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: formated/standardized command message format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">command:0&gt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_RESERVED_LENGTH</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="n">command</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Remote.__init__">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.remote.Remote.html#seleniumqt.remote.Remote.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The Constructor for Remote.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (dict): Data Given to remote by the driver.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># initialize values.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="c1"># variable to record the console.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__console</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_console_timer</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># propogation of commands.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_element_pos_started</span> <span class="o">=</span> <span class="kc">False</span>
+        
+        <span class="c1"># internal widgit which actual recieves all the events.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__internal_widgit</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># the result of the command given</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__Nothing</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__Nothing</span>
+
+        
+        <span class="c1"># set loadFinished to set self.ready</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loadFinished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__set_ready</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loadStarted</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__unset_ready</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setUrl</span><span class="p">(</span><span class="n">_QtCore</span><span class="o">.</span><span class="n">QUrl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__get_data</span><span class="p">(</span><span class="s2">&quot;starting_url&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)))</span>
+
+        <span class="c1"># connect to the driver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">:</span> <span class="n">_socket</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">_socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">_socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">_socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_data</span><span class="p">(</span><span class="s2">&quot;connection_port&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)))</span>
+
+        <span class="c1"># start the function which will recieve commands from the driver.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__remote_client_thread</span> <span class="o">=</span> <span class="n">_threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">remote_client</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__remote_client_thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;remote-client&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__remote_client_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        <span class="c1"># a dict to convert from the command given in the message</span>
+        <span class="c1"># to the function which will run it.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">STR_TO_COMMAND</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;js&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__run_js</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__go_to_url</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;click&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__click_element</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;hide&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__hide</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;show&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__show_window</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;page&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__set_page</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span> <span class="p">(</span><span class="s1">&#39;close&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__close</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">STR_TO_COMMAND</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get_data</span><span class="p">(</span><span class="s2">&quot;flags&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">flags</span><span class="p">:</span>
+            <span class="c1"># if additional window flags have been specified by the driver</span>
+            <span class="c1"># then apply the specifed flags.</span>
+            <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">flags</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlag</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">__show</span><span class="p">()</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;Starting Main Loop Timer.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_POLL_INTERVAL</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_timer</span><span class="p">()</span> <span class="c1"># set the starting timer for the main loop</span></div>
+
+        <span class="c1"># this will call __recursive function every COMMAND_POLL_INTERVAL duration.</span>
+
+    <span class="c1"># ------------------------------------------bootstrap logic-------------------------------------------</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Starts the main Qt loop</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (dict): Data given to remote, by driver</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">app</span> <span class="o">=</span> <span class="n">_QtWidgets</span><span class="o">.</span><span class="n">QApplication</span><span class="p">([</span><span class="vm">__file__</span><span class="p">])</span>
+        <span class="n">remote</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting Main Qt Loop.&quot;</span><span class="p">)</span>
+        <span class="n">return_code</span> <span class="o">=</span> <span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">exec</span><span class="p">())</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exiting with return_code: </span><span class="si">{</span><span class="n">return_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="n">return_code</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Remote.start_process">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.remote.Remote.html#seleniumqt.remote.Remote.start_process">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">start_process</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a process to run _start.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (dict): Data given to remote, by driver</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            _multiprocessing.Process: The _multiprocessing.Process where the remote is run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">proc</span> <span class="o">=</span> <span class="n">_multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">_start</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">data</span><span class="p">,),</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">proc</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Remote-&quot;</span><span class="o">+</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="s2">&quot;qwertyuiopasdfghjklzxcvbnm1234567890&quot;</span><span class="p">),</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting </span><span class="si">{</span><span class="n">proc</span><span class="o">.</span><span class="n">name</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting </span><span class="si">{</span><span class="n">proc</span><span class="o">.</span><span class="n">name</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">proc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Started </span><span class="si">{</span><span class="n">proc</span><span class="o">.</span><span class="n">name</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">proc</span></div>
+</div>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Remote&quot;</span>
+<span class="p">]</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">seleniumqt</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Ansh Mathur.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

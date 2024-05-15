@@ -29,3 +29,6 @@ class SetPageEror(Exception):
 
 class RemoteExited(Exception):
     pass
+
+class NullPageError(Exception):
+    pass

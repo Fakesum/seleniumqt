@@ -30,7 +30,7 @@ def run_command(com):
         time.sleep(0.1)
 
 
-def test_server(_sock):
+def _test_server(_sock):
     global test_server_ready
     logger.trace("Starting test server.")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -61,7 +61,7 @@ def test_server(_sock):
 def start_test_server():
     free_sock = get_free_sock()
     threading.Thread(
-        target=test_server, args=(free_sock,), daemon=True
+        target=_test_server, args=(free_sock,), daemon=True
     ).start()
     return free_sock
 

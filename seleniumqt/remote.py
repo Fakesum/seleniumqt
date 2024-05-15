@@ -19,6 +19,7 @@ from PyQt6 import (
     QtCore as _QtCore,
     QtWidgets as _QtWidgets,
     QtWebEngineWidgets as _QtWebEngineWidgets,
+    QtWebEngineCore as _QtWebEngineCore
 )
 
 # import Some Custom Exceptions
@@ -42,7 +43,6 @@ class WindowMode(_enum.IntEnum):
 
 
 class Remote(_QtWebEngineWidgets.QWebEngineView):
-
     """The Remote Qt Session Host.
 
     # Usage
@@ -135,10 +135,11 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     def __get_internal_widget(self) -> None:
         """Get the Internal Widget, this is the widget where all the events are handeled."""
         for child in self.findChildren(_QtWidgets.QWidget):
-            if (
-                child.metaObject().className()
-                == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget"
-            ):
+            child_meta: _typing.Any = child.metaObject()
+            if child_meta == None:
+                logger.warning('one child was found with None metaObject')
+                continue
+            if (child_meta.className() == "_QtWebEngineCore::RenderWidgetHostViewQtDelegateWidget"):
                 self.__internal_widgit = child
                 break
 
@@ -159,9 +160,9 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     def __get_element_pos(
         self,
-        _type: _typing.Literal["css "] | _typing.Literal["xpath"],
+        _type: _typing.Literal["css "] | _typing.Literal["xpath"] | str,
         selector: str,
-    ) -> _QtCore.QPoint:
+    ) -> None:
         """Get the position of Element by selector
 
         Args:
@@ -169,21 +170,17 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             _type (_typing.Literal['css '] | _typing.Literal['xpath']): type of selector, either css or xpath
             selector (str): selector to get the element.
 
-        Returns:
-        -------
-            _QtCore.QPoint: The QPoint of the element.
-
         """
         match _type:
             case "css ":
-                self.page().runJavaScript(
+                self.__ensure_page().runJavaScript(
                     self.JAVASCRIPT_GET_ELEMENT_POS_CSS.format(
                         css_selector=selector
                     ),
                     resultCallback=self.__get_element_pos_callback,
                 )
             case "xpath":
-                self.page().runJavaScript(
+                self.__ensure_page().runJavaScript(
                     self.JAVASCRIPT_GET_ELEMENT_POS_XPATH.format(
                         xpath_selector=selector
                     ),
@@ -269,9 +266,16 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         else:  # if the config is not given, windowed will automatically be applied.
             self.show()
 
+    def __ensure_page(self) -> _QtWebEngineCore.QWebEnginePage:
+        page: _typing.Any = self.page()
+        if page == None:
+            raise NullPageError("Page was Null")
+        else:
+            return page
+
     # ------------------------------------command execution functions-------------------------------------
     @logger.catch(reraise=True)
-    def __run_js(self, script_file_name: str) -> None:
+    def __run_js(self, script_file_name: str) -> bool:
         """Execute the Given Javascript file.
 
         Args:
@@ -286,7 +290,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             logger.exception(
                 f"Threre was a problem when reading the script file: {script_file_name=}"
             )
-            return
+            raise IOError(f"File: {script_file_name=} not found.")
 
         def return_callback(result: str):
             result = str(
@@ -301,12 +305,12 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
                     str(self.__console),
                 )
 
-            self.result = result
+            self.result: _typing.Any = result # type: ignore
 
         logger.info(f"Running {script=}")
         logger.trace(f"Starting to run {script=}")
 
-        self.page().runJavaScript(
+        self.__ensure_page().runJavaScript(
             self.JAVASCRIPT_EXECUTION_SHELL.format(script=script),
             resultCallback=return_callback,
         )
@@ -315,7 +319,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
 
     @logger.catch(reraise=True)
-    def __go_to_url(self, url: str) -> None:
+    def __go_to_url(self, url: str) -> bool:
         """Change the url as per the argument given with setUrl.
 
         Args:
@@ -324,18 +328,22 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         """
         logger.info(
-            f"Changing Url to {url=} from {self.page().url().toString()=}"
+            f"Changing Url to {url=} from {self.__ensure_page().url().toString()=}"
         )
 
         logger.trace(f"Setting Url to {url=}")
         self.setUrl(_QtCore.QUrl(url))
         logger.trace(f"Setting Url to {url=}")
 
-        self.result = None
+        self.result = 'done' # mypy kept saying that for some reason None can't be used here.
+        # since the driver isn't checking for the return value any ways, I just set it equal to 'done'
+
         return True
 
     @logger.catch(reraise=True)
-    def __click_element(self, selector: str) -> None:  # noqa - untested #TODO: debug here.
+    def __click_element(
+        self, selector: str
+    ) -> bool:  # noqa - untested #TODO: debug here.
         """Sends a QMouseClick Event to the QApplication, at the point of the element.
         The element is gotten from the selector.
 
@@ -351,7 +359,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         if self._element_pos == None:
             if not self._element_pos_started:
-                self._element_pos_started = True
+                self._element_pos_started: bool = True
                 self.__get_element_pos(selector[:4], selector[4:])
             return False
 
@@ -360,39 +368,39 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         click = _QtCore.QEvent(_QtCore.QEvent.Type.MouseButtonPress)
         _QtWidgets.QApplication.postEvent(self, click)
-        self.result = None
+        self.result = 'done'
 
         return True
 
     @logger.catch(reraise=True)
-    def __hide(self, arg: _typing.Literal[""] = "") -> None:
+    def __hide(self, arg: _typing.Literal[""] = "") -> bool:
         self.hide()
-        self.result = None
+        self.result = 'done'
         return True
 
     @logger.catch(reraise=True)
-    def __show_window(self, arg: _typing.Literal[""] = "") -> None:
+    def __show_window(self, arg: _typing.Literal[""] = "") -> bool:
         self.__show()
-        self.result = True
+        self.result = 'done'
         return True
 
     @logger.catch(reraise=True)
-    def __set_page(self, page_script: str) -> None:
+    def __set_page(self, page_script: str) -> bool:
         try:
             self.setPage(_importlib.import_module(page_script).page)
         except Exception:
             raise SetPageEror(f"{page_script=}")
-        self.result = True
+        self.result = 'done'
         return True
 
     @logger.catch(reraise=True)
-    def __close(self, arg: _typing.Literal[""] = "") -> None:
+    def __close(self, arg: _typing.Literal[""] = "") -> _typing.NoReturn:
         self.close()
         self.conn.close()
         raise SystemExit(0)
 
     # -------------------------------------driver communication logic-------------------------------------
-    def remote_client(self) -> _typing.NoReturn:
+    def remote_client(self) -> None:
         """This function runs in a seperate thread, here it continously listens for any
         commands that are given by the driver, and updates the self.command property
         accordingly.
@@ -400,9 +408,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         logger.info("Started Remote Command Client")
 
         while self.conn:
-            message = self.conn.recv(1024)
-            message = message.decode("utf-8")
-            self.command = message
+            message: bytes = self.conn.recv(1024)
+            self.command = message.decode("utf-8")
             logger.info(
                 f"Executing Command: {self.command[:self.COMMAND_RESERVED_LENGTH]} {self.command[self.COMMAND_RESERVED_LENGTH:]}"
             )
@@ -413,7 +420,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.conn.send(
                 self.result.encode("utf-8") if self.result != None else b"done"
             )
-            self.result: self.__Nothing | str = self.__Nothing
+            self.result = self.__Nothing
 
         logger.warning("Closing Remote Client.")
         self.close()  # when the connection is close we want qt to close as well.
@@ -428,7 +435,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.timer.deleteLater()
 
         # create new timer
-        self.timer = _QtCore.QTimer()
+        self.timer: _QtCore.QTimer = _QtCore.QTimer()
         self.timer.startTimer(self.COMMAND_POLL_INTERVAL)
 
         # start and connect new timer.
@@ -449,7 +456,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.__set_timer()  # set the timer for the next call.
 
     def __console_recurrent(self) -> None:
-        self.page().runJavaScript(
+        self.__ensure_page().runJavaScript(
             self.CONSOLE_JAVASCRIPT, resultCallback=self.__update_console
         )
 
@@ -467,12 +474,12 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     def __set_ready(self) -> None:
         """Runs once when the page is loaded."""
         self.ready = True
-        logger.debug(f"Done Loading, {self.page().url().toString()=}")
+        logger.debug(f"Done Loading, {self.__ensure_page().url().toString()=}")
 
     def __unset_ready(self) -> None:
         """Runs when page loading has started."""
         self.ready = False
-        logger.debug(f"Starting Loading, {self.page().url().toString()=}")
+        logger.debug(f"Starting Loading, {self.__ensure_page().url().toString()=}")
 
     def __get_data(
         self, key: str, required: bool = False
@@ -537,25 +544,25 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.ready = False
 
         # variable to record the console.
-        self.__console = None
-        self._console_timer = None
+        self.__console = []
+        self._console_timer: _typing.Any = None
 
         # propogation of commands.
         self.command = ""
         self._element_pos = None
-        self._element_pos_started = False
+        self._element_pos_started: bool = False
 
         # internal widgit which actual recieves all the events.
         self.__internal_widgit = None
 
         # the result of the command given
-        self.result: self.__Nothing | str = self.__Nothing
+        self.result: self.__Nothing | str | _typing.Any = self.__Nothing
 
         # set loadFinished to set self.ready
         self.loadFinished.connect(self.__set_ready)
         self.loadStarted.connect(self.__unset_ready)
 
-        self.timer = None
+        self.timer: _QtCore.QTimer = None
 
         self.setUrl(_QtCore.QUrl(self.__get_data("starting_url", True)))
 
@@ -576,7 +583,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         # a dict to convert from the command given in the message
         # to the function which will run it.
-        self.STR_TO_COMMAND = {
+        self.STR_TO_COMMAND: dict[str, tuple[str, _typing.Callable]] = {
             self.__format_command(0): ("js", self.__run_js),
             self.__format_command(1): ("url", self.__go_to_url),
             self.__format_command(2): ("click", self.__click_element),

@@ -1,9 +1,11 @@
 import sys
 import pathlib
 
+
 # Access the module in a external manner.
 def __external_import():
     sys.path.append(pathlib.Path(__file__).parent.parent.absolute().__str__())
+
 
 __external_import()
 

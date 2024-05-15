@@ -1,5 +1,5 @@
-logs/
-**/logs/
+.log/
+**/.log/
 
 .tests/
 **/.tests/

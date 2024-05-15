@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>seleniumqt.driver &#8212; seleniumqt 0.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for seleniumqt.driver</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ---------------------------------------------------</span>
+<span class="c1"># author: Ansh Mathur</span>
+<span class="c1"># gtihub: https://github.com/Fakesum</span>
+<span class="c1"># repo: https://github.com/Fakesum/ TODO: THIS</span>
+<span class="c1"># ---------------------------------------------------</span>
+
+<span class="c1"># -------------------------------------import std library python--------------------------------------</span>
+<span class="kn">import</span> <span class="nn">threading</span> <span class="k">as</span> <span class="nn">_threading</span>
+<span class="kn">import</span> <span class="nn">random</span> <span class="k">as</span> <span class="nn">_random</span>
+<span class="kn">import</span> <span class="nn">os</span> <span class="k">as</span> <span class="nn">_os</span>
+<span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">_typing</span>
+<span class="kn">import</span> <span class="nn">time</span> <span class="k">as</span> <span class="nn">_time</span>
+<span class="kn">import</span> <span class="nn">contextlib</span> <span class="k">as</span> <span class="nn">_contextlib</span>
+
+<span class="c1"># import _socket for communication with remote</span>
+<span class="kn">import</span> <span class="nn">socket</span> <span class="k">as</span> <span class="nn">_socket</span>
+
+<span class="c1"># import _re for url matching, and more.</span>
+<span class="kn">import</span> <span class="nn">re</span> <span class="k">as</span> <span class="nn">_re</span>
+
+<span class="c1"># import remote Class.</span>
+<span class="kn">from</span> <span class="nn">.remote</span> <span class="kn">import</span> <span class="n">Remote</span> <span class="k">as</span> <span class="n">_Remote</span>
+
+<span class="c1"># import logger</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># import exceptions</span>
+<span class="kn">from</span> <span class="nn">.exception</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># Driver Class.</span>
+<div class="viewcode-block" id="Driver">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver">[docs]</a>
+<span class="k">class</span> <span class="nc">Driver</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Driver Class, allows for multithreaded control of remote class.</span>
+
+<span class="sd">    # Usage</span>
+<span class="sd">    ## How to Create Driver</span>
+<span class="sd">    ```python</span>
+<span class="sd">    driver = Driver({</span>
+<span class="sd">        ... # Config given to remote, and shared by driver.</span>
+<span class="sd">    })</span>
+<span class="sd">    ```</span>
+<span class="sd">    </span>
+<span class="sd">    ## how to give command to remote.</span>
+<span class="sd">    </span>
+<span class="sd">    ```python</span>
+<span class="sd">    driver.execute(...) # see execute function for more info.</span>
+<span class="sd">    ```</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># the number of charectors at the begining of the message transfer to _socket</span>
+    <span class="c1"># that indicate which command is being given.</span>
+    <span class="n">COMMAND_RESERVED_LENGTH</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="c1"># -----------------------------------------utility functions------------------------------------------</span>
+    <span class="nd">@_contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+    <span class="k">def</span> <span class="nf">__temp_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">file_name</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="s2">&quot;qwertyuiopasdfghjklzxcvbnm1234567890&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">_os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">path</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">_os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1"># -------------------------------------------initialization-------------------------------------------</span>
+    <span class="k">def</span> <span class="nf">__conn_server</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_typing</span><span class="o">.</span><span class="n">NoReturn</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Server which gives commands to remote.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            _typing.NoReturn: Never Returns</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn_sock</span><span class="o">.</span><span class="n">listen</span><span class="p">()</span>
+        <span class="n">conn</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn_sock</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+
+        <span class="k">while</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span> <span class="o">==</span> <span class="p">[]:</span>
+                <span class="n">_time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span><span class="p">:</span>
+                <span class="n">conn</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">command</span><span class="p">:</span><span class="n">conn</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Closing, _Remote Connection was closed.&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__format_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Utility Command to format number to standardized command message format.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            command (int | str): Command name/id</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: formated/standardized command message format.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="s2">command:0&gt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_RESERVED_LENGTH</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="n">command</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Driver.__init__">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;starting_url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://httpbin.org/get&quot;</span><span class="p">})</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for Driver</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config (_type_, optional): _description_. Defaults to {&quot;starting_url&quot;: &quot;http://httpbin.org/get&quot;}.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__hidden</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn_sock</span> <span class="o">=</span> <span class="n">_socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">_socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">_socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn_sock</span><span class="o">.</span><span class="n">bind</span><span class="p">((</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_TO_ID</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;js&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+            <span class="s2">&quot;click&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+            <span class="s2">&quot;hide&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+            <span class="s1">&#39;show&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__format_command</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_TO_ID</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remote_proc</span> <span class="o">=</span> <span class="n">_Remote</span><span class="o">.</span><span class="n">start_process</span><span class="p">({</span>
+            <span class="s2">&quot;connection_port&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn_sock</span><span class="o">.</span><span class="n">getsockname</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+        <span class="p">})</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__driver_server_thread</span> <span class="o">=</span> <span class="n">_threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__conn_server</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__driver_server_thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;driver-server&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__driver_server_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+    <span class="c1"># ==============================================commands==============================================</span>
+    <span class="c1"># first the basic commands.</span>
+
+<div class="viewcode-block" id="Driver.execute">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.execute">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute a command directly to remote.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            command (str): Command name, ex: js, all names are given in self.COMMAND_TO_ID</span>
+<span class="sd">            arg (str): string argument to give to remote</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str | None: _description_</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_proc</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">RemoteExited</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_remote_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">=}</span><span class="s2"> has exited.&quot;</span><span class="p">)</span>
+
+        <span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">COMMAND_TO_ID</span><span class="p">[</span><span class="n">command</span><span class="p">]</span><span class="o">+</span><span class="n">arg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_commands</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="p">(</span><span class="n">command</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">):</span>
+            <span class="n">_time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">[</span><span class="n">command</span><span class="p">]</span>
+        
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">[</span><span class="n">command</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="Driver.execute_script_file">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.execute_script_file">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">execute_script_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_file_name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;execute the javascript in the given script file.</span>
+
+<span class="sd">        # Usage</span>
+<span class="sd">            ```python</span>
+<span class="sd">            &gt;&gt;&gt; # the file to run.</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; print(open(&quot;main.js&quot;, &quot;r&quot;).read())</span>
+<span class="sd">            document.querySelector(&#39;body&#39;).innerHTML = &#39;&#39;;</span>
+<span class="sd">            &gt;&gt;&gt; # call the function</span>
+<span class="sd">            &gt;&gt;&gt; driver.execute_script_file(&#39;main.js&#39;)</span>
+
+<span class="sd">            # -------------------------------------------------------</span>
+
+<span class="sd">            &gt;&gt;&gt; # with return value.</span>
+<span class="sd">            &gt;&gt;&gt; print(open(&quot;main.js&quot;, &quot;r&quot;).read())</span>
+<span class="sd">            return 1;</span>
+<span class="sd">            &gt;&gt;&gt; a = driver.execute_script_file(&quot;main.js&quot;)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; a</span>
+<span class="sd">            &#39;1&#39;</span>
+<span class="sd">            ```</span>
+
+<span class="sd">        # Args:</span>
+<span class="sd">            script_file_name (str): the path of the script file name.</span>
+
+<span class="sd">        # Raises:</span>
+<span class="sd">            FileNotFoundError: Raised if the file is not found.</span>
+
+<span class="sd">        # Returns:</span>
+<span class="sd">            str | None: Whatever is Retuned by the script.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">script_file_name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;file: </span><span class="si">{</span><span class="n">script_file_name</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;js&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">script_file_name</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Driver.execute_script">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.execute_script">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">execute_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute given Script, and return the returned value from the script, converted to python.</span>
+
+<span class="sd">        # Usage</span>
+<span class="sd">            ```python</span>
+<span class="sd">            &gt;&gt;&gt; # without return</span>
+<span class="sd">            &gt;&gt;&gt; driver.execute_script(&quot;console.log(&#39;abc&#39;)&quot;)</span>
+<span class="sd">            &gt;&gt;&gt;</span>
+<span class="sd">            &gt;&gt;&gt; # with return</span>
+<span class="sd">            &gt;&gt;&gt; a = driver.execute_script(&quot;console.log(&#39;abc&#39;); return 1;&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; print(a)</span>
+<span class="sd">            &#39;1&#39;</span>
+<span class="sd">            &gt;&gt;&gt; </span>
+<span class="sd">            ```</span>
+
+<span class="sd">        # Raises:</span>
+<span class="sd">            JavascriptException: When there is a problem executing the javascript, The entire console,</span>
+<span class="sd">            is provided in the exception.</span>
+
+<span class="sd">        # Args:</span>
+<span class="sd">            script (str): The Javascript to execute.</span>
+
+<span class="sd">        # Returns:</span>
+<span class="sd">            str | None: The return value of the script.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">__temp_file</span><span class="p">()</span> <span class="k">as</span> <span class="n">tempfile_path</span><span class="p">:</span>
+            <span class="nb">open</span><span class="p">(</span><span class="n">tempfile_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">script</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_script_file</span><span class="p">(</span><span class="n">tempfile_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Driver.open">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.open">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;open the url given in the current tab.</span>
+<span class="sd">        returns None. uses setURL.</span>
+
+<span class="sd">        # Usage</span>
+<span class="sd">            ```python</span>
+<span class="sd">            &gt;&gt;&gt; driver.open(&quot;https://www.google.com/&quot;) # this will open the url.</span>
+<span class="sd">            &gt;&gt;&gt; driver.open(&#39;my purse&#39;) # this will throw a InvalidUrl Exception.</span>
+<span class="sd">            ```</span>
+<span class="sd">        </span>
+<span class="sd">        # Raises:</span>
+<span class="sd">            InvalidUrl: raised when the url is detected to be invalid.</span>
+
+<span class="sd">        # Args:</span>
+<span class="sd">            url (str): open the url in the current tab.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># regex(s) taken from github.com/seleniumbase/seleniumbase &gt; fixtures.page_utils.is_valid_url</span>
+        <span class="n">url_regex</span> <span class="o">=</span> <span class="n">_re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;^(?:http)s?://&quot;</span>  <span class="c1"># http:// or https://</span>
+            <span class="sa">r</span><span class="s2">&quot;(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+&quot;</span>
+            <span class="sa">r</span><span class="s2">&quot;(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|&quot;</span>  <span class="c1"># domain...</span>
+            <span class="sa">r</span><span class="s2">&quot;localhost|&quot;</span>  <span class="c1"># localhost...</span>
+            <span class="sa">r</span><span class="s2">&quot;\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})&quot;</span>  <span class="c1"># ...or ip</span>
+            <span class="sa">r</span><span class="s2">&quot;(?::\d+)?&quot;</span>  <span class="c1"># optional port</span>
+            <span class="sa">r</span><span class="s2">&quot;(?:/?|[/?]\S+)$&quot;</span><span class="p">,</span>
+            <span class="n">_re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># logger.debug(f&quot;{url_regex.pattern=}, {url=}&quot;) # this one is a bit much.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;going to page: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">url_regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidUrl</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;argument </span><span class="si">{</span><span class="n">url</span><span class="si">=}</span><span class="s2"> is not a valid url.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;url&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Driver.click">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.click">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;css &#39;</span><span class="p">]</span> <span class="o">|</span> <span class="n">_typing</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;xpath&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;css &#39;</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="c1">#noqa - untested #TODO: debug here.</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this</span>
+<span class="sd">        click event is indistiguishable from a real click.</span>
+
+<span class="sd">        # Usage</span>
+<span class="sd">            ```python</span>
+<span class="sd">            &gt;&gt;&gt; driver.click(&quot;input.pfp&quot;) # this will click the input html element with the class `pfp`.</span>
+<span class="sd">            ```</span>
+
+<span class="sd">        # Raises:</span>
+<span class="sd">            InternalWidgitNotFound: An Internal error which is triggred if the internal widgit which the click signal is send</span>
+<span class="sd">            to is not foound.</span>
+
+<span class="sd">        # Args:</span>
+<span class="sd">            selector (str): the selector for the element that is to be clicked.</span>
+<span class="sd">            _type (_typing.Literal[&#39;css&#39;] | _typing.Literal[&#39;xpath], optional): in what format is the selector given, css, xpath, etc. Defaults to &#39;css &#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;click&#39;</span><span class="p">,</span> <span class="n">_type</span><span class="o">+</span><span class="n">selector</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Driver.hide_window">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.hide_window">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">hide_window</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;hide the browser window.</span>
+<span class="sd">        # Usage</span>
+<span class="sd">            ```python</span>
+<span class="sd">            &gt;&gt;&gt; # window is visible</span>
+<span class="sd">            &gt;&gt;&gt; driver.hide_window()</span>
+<span class="sd">            &gt;&gt;&gt; # window is no longer visible</span>
+<span class="sd">            &gt;&gt;&gt; driver.show_window()</span>
+<span class="sd">            &gt;&gt;&gt; # window is visible again.</span>
+<span class="sd">            ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__hidden</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s1">&#39;hide&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Driver.show_window">
+<a class="viewcode-back" href="../../generated/api/seleniumqt.driver.Driver.html#seleniumqt.driver.Driver.show_window">[docs]</a>
+    <span class="nd">@logger</span><span class="o">.</span><span class="n">catch</span>
+    <span class="k">def</span> <span class="nf">show_window</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;show the browser window if it is hidden.</span>
+<span class="sd">        # Usage</span>
+<span class="sd">            ```python</span>
+<span class="sd">            &gt;&gt;&gt; # window is visible</span>
+<span class="sd">            &gt;&gt;&gt; driver.hide_window()</span>
+<span class="sd">            &gt;&gt;&gt; # window is no longer visible</span>
+<span class="sd">            &gt;&gt;&gt; driver.show_window()</span>
+<span class="sd">            &gt;&gt;&gt; # window is visible again.</span>
+<span class="sd">            ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__hidden</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;show&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Ignoring show_window command, window is not hidden.&quot;</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ----------------------------------------------cleanup-----------------------------------------------</span>
+    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># just in case, this should be done automatically, but just in case.</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="c1"># the self.conn_sock might have already closed</span>
+            <span class="c1"># or the program might have crashed before defining it.</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Driver&quot;</span><span class="p">]</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">seleniumqt</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Ansh Mathur.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
