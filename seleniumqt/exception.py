@@ -4,3 +4,4 @@ class JavascriptException(Exception): pass
 class InvalidUrl(Exception): pass
 class InternalWidgitNotFound(Exception): pass
 class InvalidSelectorType(Exception): pass
+class SetPageEror(Exception): pass
