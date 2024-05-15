@@ -31,7 +31,7 @@ from .exception import (
     NullPageError,
     InternalWidgitNotFound,
     SetPageEror,
-    DataNotGiven
+    DataNotGiven,
 )
 
 # import logger
@@ -52,7 +52,6 @@ class WindowMode(_enum.IntEnum):
 
 
 class Remote(_QtWebEngineWidgets.QWebEngineView):
-
     """The Remote Qt Session Host.
 
     # Usage
@@ -92,11 +91,14 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     JAVASCRIPT_GET_ELEMENT_POS_CSS = """
     (()=>{{
         try{{
-            var elm = document.querySelector({css_selector});
+            var elm = document.querySelector("{css_selector}");
+            if (elm == null){{
+                return "JavascriptException, cannot find element, with css selector: "+"{css_selector}";
+            }};
             var box = elm.getBoundingClientRect();
             return (box.right+((box.right-box.left)/2)).toString()+','+(box.top+((box.bottom-box.top)/2)).toString();
         }} catch (err) {{
-            return 'JavascriptException, exception: '+err.message;
+            return "JavascriptException, exception: "+err.message;
         }}
     }})()
     """
@@ -104,11 +106,11 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     JAVASCRIPT_GET_ELEMENT_POS_XPATH = """
     (()=>{{
         try{{
-            var elm = document.evaluate({xpath_selector}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            var elm = document.evaluate("{xpath_selector}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
             var box = elm.getBoundingClientRect();
             return (box.right+((box.right-box.left)/2)).toString()+','+(box.top+((box.bottom-box.top)/2)).toString();
         }} catch(err){{
-            return 'JavascriptException, exception: '+err.message;
+            return "JavascriptException, exception: "+err.message;
         }}
     }})
     """
@@ -118,7 +120,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         try {{
             {script};
         }} catch (err) {{
-            return 'JavascriptException, exception: '+err.message;
+            return "JavascriptException, exception: "+err.message;
         }}
     }})();
     """
@@ -145,7 +147,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     def __raise(self, e: Exception):
         logger.exception(str(e))
-        self.__raise(e)
+        raise e
 
     def __get_element_pos_callback(self, res):
         """Set Callback for getting the position of elements using javascript, for __click_element function.
@@ -175,23 +177,25 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             selector (str): selector to get the element.
 
         """
+
+        script: _typing.Any | str = None
         match _type:
             case "css ":
-                self.__ensure_page().runJavaScript(
-                    self.JAVASCRIPT_GET_ELEMENT_POS_CSS.format(
-                        css_selector=selector
-                    ),
-                    resultCallback=self.__get_element_pos_callback,
+                script = self.JAVASCRIPT_GET_ELEMENT_POS_CSS.format(
+                    css_selector=selector
                 )
             case "xpath":
-                self.__ensure_page().runJavaScript(
-                    self.JAVASCRIPT_GET_ELEMENT_POS_XPATH.format(
-                        xpath_selector=selector
-                    ),
-                    resultCallback=self.__get_element_pos_callback,
+                script = self.JAVASCRIPT_GET_ELEMENT_POS_XPATH.format(
+                    xpath_selector=selector
                 )
             case _:
                 self.__raise(InvalidSelectorType(f"{_type=}"))
+
+        logger.trace(f"Running Javascript: {script=}")
+        self.__ensure_page().runJavaScript(
+            script,
+            resultCallback=self.__get_element_pos_callback,
+        )
 
     def __update_console(self, console):
         console = str(console)
@@ -303,11 +307,13 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
             if result.startswith("JavascriptException"):
                 logger.exception("This Here.")
-                self.__raise(JavascriptException(
-                    "There was a problem with the javascript",
-                    result,
-                    str(self.__console),
-                ))
+                self.__raise(
+                    JavascriptException(
+                        "There was a problem with the javascript",
+                        result,
+                        str(self.__console),
+                    )
+                )
 
             self.result: _typing.Any = result  # type: ignore
 
@@ -344,9 +350,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
 
     @logger.catch(reraise=True)
-    def __click_element(
-        self, selector: str
-    ) -> bool:  # noqa - untested #TODO: debug here.
+    def __click_element(self, selector: str) -> bool:  # noqa - untested #TODO: debug here.
         """Send a QMouseClick Event to the QApplication, at the point of the element's position.
 
         The element is gotten from the selector.
@@ -399,14 +403,14 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         raise SystemExit(0)
 
     @logger.catch(reraise=True)
-    def __current_url(self):
+    def __current_url(self, arg: _typing.Literal[""] = "") -> bool:
         self.result = self.__ensure_page().url().toString()
         return True
 
     # -------------------------------------driver communication logic-------------------------------------
     def remote_client(self) -> None:
         """Poll self.conn.
-        
+
         This function runs in a seperate thread, here it continously listens for any
         commands that are given by the driver, and updates the self.command property
         accordingly.
@@ -416,9 +420,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         while self.conn:
             message: bytes = self.conn.recv(1024)
             self.command = message.decode("utf-8")
-            logger.info(
-                f"Executing Command: {self.command[:self.COMMAND_RESERVED_LENGTH]} {self.command[self.COMMAND_RESERVED_LENGTH:]}"
-            )
+            logger.info(f"Executing Command: {self.command}")
 
             while self.result == self.__Nothing:
                 _time.sleep(0.5)
@@ -433,7 +435,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     def __set_timer(self) -> None:
         """Set slef.timer for recurrent function.
-        
+
         This function deletes any exsiting timers and sets a new timer for
         COMMAND_POLL_INTERVAL _time, upon the completion of which the recurrent function
         is run.
@@ -482,7 +484,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     # ----------------------------------------initialization logic----------------------------------------
     def __set_ready(self) -> None:
         """Run once when the page is loaded.
-        
+
         to set self.ready and log that the page is done loading.
         """
         self.ready = True
@@ -490,7 +492,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
     def __unset_ready(self) -> None:
         """Run when page loading has started.
-        
+
         to set self.ready and log that the page has started loading.
         """
         self.ready = False
@@ -525,9 +527,11 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             return self.data[key]
         else:
             if required:
-                self.__raise(DataNotGiven(
-                    f"Required Data Argument {key=} was not provided."
-                ))
+                self.__raise(
+                    DataNotGiven(
+                        f"Required Data Argument {key=} was not provided."
+                    )
+                )
             return False
 
     def __format_command(self, command: int | str) -> str:
@@ -605,7 +609,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.__format_command(4): ("show", self.__show_window),
             self.__format_command(5): ("page", self.__set_page),
             self.__format_command(6): ("close", self.__close),
-            self.__format_command(7): ("current_url", self.__current_url)
+            self.__format_command(7): ("current_url", self.__current_url),
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")
@@ -636,8 +640,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
 
         """
         app = _QtWidgets.QApplication([__file__])
-        
-        remote = cls(data) # noqa: F841 # this is because qt works in weird and mysterious ways.
+
+        remote = cls(data)  # noqa: F841 # this is because qt works in weird and mysterious ways.
 
         logger.info("Starting Main Qt Loop.")
         return_code = app.exec()

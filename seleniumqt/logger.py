@@ -12,6 +12,19 @@ from datetime import datetime
 import os
 import sys
 
+# threading to get thread name
+import threading
+
+#processing to get process name
+import multiprocessing
+
+# re + slugify to convert any string to a valid filename
+import re
+
+def slugify(str_: str):
+    slug = re.sub(r'[^A-z0-9-]', '_', str_)
+    return slug
+
 if not os.path.exists("./.log"):
     os.mkdir(".log")
 
@@ -31,7 +44,9 @@ logger.add(
 
 # no-colorize to log file.
 logger.add(
-    open(datetime.now().strftime("./.log/%d_%m_%Y_%H_%M_%S.log"), "w"),
+    #                                                                      this will make it clearer which thread and process created each log.
+    open(datetime.now().strftime(f"./.log/%d_%m_%Y_%H_%M_%S_{slugify(threading.current_thread().name)}_{slugify(multiprocessing.current_process().name)}.log"), "w"),
+    format=FORMAT,
     colorize=False,
     enqueue=True,
     backtrace=True,

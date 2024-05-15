@@ -27,15 +27,11 @@ from .remote import Remote as _Remote
 from .logger import logger
 
 # import exceptions
-from .exception import (
-    RemoteExited,
-    InvalidUrl
-)
+from .exception import RemoteExited, InvalidUrl
 
 
 # Driver Class.
 class Driver:
-
     """Driver Class, allows for multithreaded control of remote class.
 
     # Usage
@@ -72,14 +68,8 @@ class Driver:
             _os.remove(path)
 
     # -------------------------------------------initialization-------------------------------------------
-    def __conn_server(self) -> _typing.NoReturn:
-        """Server which gives commands to remote.
-
-        Returns
-        -------
-            _typing.NoReturn: Never Returns
-
-        """
+    def __conn_server(self) -> None:
+        """Server which gives commands to remote."""
         self.conn_sock.listen()
         conn, _ = self.conn_sock.accept()
 
@@ -88,9 +78,15 @@ class Driver:
                 _time.sleep(1)
             for command in self._commands:
                 conn.send(command.encode("utf-8"))
-                self._results.update(
-                    {command: conn.recv(1024).decode("utf-8")}
-                )
+                try:
+                    self._results.update(
+                        {command: conn.recv(1024).decode("utf-8")}
+                    )
+                except ConnectionResetError as e:
+                    logger.exception(str(e))
+                    logger.error("Closing...")
+                    self.__clossed = True
+                    return  # this will exit the conn server.
             self._commands = []
         logger.warning("Closing, _Remote Connection was closed.")
 
@@ -128,6 +124,7 @@ class Driver:
         self._commands: list = []
         self._results: dict[str, _typing.Any] = {}
         self.__hidden = False
+        self.__clossed = False
         self.conn_sock: _socket.socket = _socket.socket(
             _socket.AF_INET, _socket.SOCK_STREAM
         )
@@ -141,7 +138,7 @@ class Driver:
             "show": self.__format_command(4),
             "page": self.__format_command(5),
             "close": self.__format_command(6),
-            "current_url": self.__format_command(7)
+            "current_url": self.__format_command(7),
         }
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
@@ -179,6 +176,8 @@ class Driver:
         command = self.COMMAND_TO_ID[command] + arg
         self._commands.append(command)
         while command not in self._results:
+            if (self.__clossed):
+                raise RemoteExited
             _time.sleep(1)
         result = self._results[command]
 
@@ -316,7 +315,7 @@ class Driver:
     @logger.catch(reraise=True)
     def hide_window(self) -> None:
         """Hide the browser window.
-        
+
         # Usage
             ```python
             >>> # window is visible
@@ -348,21 +347,25 @@ class Driver:
             logger.warning(
                 "Ignoring show_window command, window is not hidden."
             )
-    
+
     @logger.catch(reraise=True)
-    def set_page(self,custom_page_file: str) -> None:
+    def set_page(self, custom_page_file: str) -> None:
         self.execute("page", custom_page_file)
-    
+
     @logger.catch(reraise=True)
     def quit(self) -> None:
-        self.execute('close')
-    
+        self.execute("close")
+
     @logger.catch(reraise=True)
     def close(self) -> None:
-        self.execute('close')
-    
+        self.execute("close")
+
     def current_url(self):
         self.execute("current_url")
+
+    @property
+    def is_closed(self):
+        return self.__clossed
 
     # ----------------------------------------------cleanup-----------------------------------------------
     def __del__(self):
