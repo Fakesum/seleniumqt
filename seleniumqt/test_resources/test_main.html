@@ -1,0 +1,12 @@
+<html>
+    <body>
+        <button class="only-button">The Only Button</button>
+        <script>
+            document.querySelector(".only-button").onclick = ((...args) => {
+                req = new XMLHttpRequest();
+                req.open("GET", "/clicked", false);
+                req.send(null);
+            });
+        </script>
+    </body>
+</html>
