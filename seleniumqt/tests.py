@@ -31,11 +31,18 @@ class Url(object):
     of parameters in query strings."""
 
     def __init__(self, url):
+        self.__url = url
         parts = urlparse(url)
         _query = frozenset(parse_qsl(parts.query))
         _path = unquote_plus(parts.path)
         parts = parts._replace(query=_query, path=_path)
         self.parts = parts
+    
+    def __repr__(self):
+        return self.__url
+
+    def __str__(self):
+        return self.__repr__()
 
     def __eq__(self, other):
         return self.parts == other.parts
@@ -127,11 +134,15 @@ class Tests(unittest.TestCase):
         self.__ensure_driver()
         self.__ensure_server()
 
-        self.driver.open(f"https://localhost:{self.server.flask_port}")
+        flask_url = f"http://localhost:{self.server.flask_port}/"
+
+        self.driver.open(flask_url)
+
+        logger.trace(f"{self.driver.page_html()=}")
 
         self.assertEqual(
             Url(self.driver.current_url()),
-            Url("https://www.google.com"),
+            Url(flask_url),
             "page url was not changed.",
         )
 
@@ -143,15 +154,14 @@ class Tests(unittest.TestCase):
         self.__ensure_server()
 
         self.driver.open(f"http://localhost:{self.server.flask_port}/")
-        self.driver.click("body")
+        self.driver.click(".only-button")
 
-        # WARNING: TEMP.
-        # st = time.time()
-        # while not self.server.clicked:
-        #     if (time.time() - st) < 3:
-        #         raise TimeoutError(
-        #             "Took too long to click on button, more than 10 seconds!"
-        #         )
+        st = time.time()
+        while not self.server.clicked:
+            if (time.time() - st) < 3:
+                raise TimeoutError(
+                    "Took too long to click on button, more than 10 seconds!"
+                )
 
         logger.success("Passed test_click")
 

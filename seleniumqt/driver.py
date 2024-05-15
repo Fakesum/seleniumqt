@@ -53,6 +53,8 @@ class Driver:
     # that indicate which command is being given.
     COMMAND_RESERVED_LENGTH = 2
 
+    JAVASCRIPT_GET_HTML = '''return document.querySelector("html").outerHTML;'''
+
     # -----------------------------------------utility functions------------------------------------------
     @_contextlib.contextmanager
     def __temp_file(self, file_name=None):
@@ -138,7 +140,7 @@ class Driver:
             "show": self.__format_command(4),
             "page": self.__format_command(5),
             "close": self.__format_command(6),
-            "current_url": self.__format_command(7),
+            "current_url": self.__format_command(7)
         }
 
         logger.debug(f"{self.COMMAND_TO_ID=}")
@@ -177,11 +179,16 @@ class Driver:
         self._commands.append(command)
         while command not in self._results:
             if (self.__clossed):
-                raise RemoteExited
+                e = RemoteExited()
+                logger.exception(e)
+                raise e
             _time.sleep(1)
         result = self._results[command]
 
         del self._results[command]
+
+        if isinstance(result, bytes):
+            result = result.decode('utf-8')
 
         return result
 
@@ -360,8 +367,11 @@ class Driver:
     def close(self) -> None:
         self.execute("close")
 
-    def current_url(self):
-        self.execute("current_url")
+    def current_url(self) -> str:
+        return self.execute("current_url")
+
+    def page_html(self):
+        return self.execute_script(self.JAVASCRIPT_GET_HTML)
 
     @property
     def is_closed(self):

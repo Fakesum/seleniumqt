@@ -144,7 +144,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     """
 
     # -----------------------------------------utility functions------------------------------------------
-
+    def __create_temp_file(self): #TODO: HERE.
+        return ("".join(_random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", k=20)))+".temp"
     def __raise(self, e: Exception):
         logger.exception(str(e))
         raise e
@@ -609,7 +610,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
             self.__format_command(4): ("show", self.__show_window),
             self.__format_command(5): ("page", self.__set_page),
             self.__format_command(6): ("close", self.__close),
-            self.__format_command(7): ("current_url", self.__current_url),
+            self.__format_command(7): ("current_url", self.__current_url)
         }
 
         logger.debug(f"{self.STR_TO_COMMAND=}")
