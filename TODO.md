@@ -1,4 +1,6 @@
 # TODO
 
 - [ ] IFRAME SUPPORT:
-    - [ ] IFrame 
+    - [ ] add switch_to_iframe
+    - [ ] add default_context
+    - [ ] add context manager for convinice.
