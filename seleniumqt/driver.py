@@ -379,12 +379,13 @@ class Driver:
 
     # ----------------------------------------------cleanup-----------------------------------------------
     def __del__(self):
-        """Close connection socket."""
+        """Close connection socket, and the remote_proc if it is still running."""
         try:
             self.conn_sock.close()  # just in case, this should be done automatically, but just in case.
-        except Exception as e:  # the self.conn_sock might have already closed
+            self._remote_proc.kill() # don't leave hanging windows.
+        except:
             # or the program might have crashed before defining it.
-            logger.exception(str(e))
+            pass # this is a bit dagrous
 
 
 __all__ = ["Driver"]

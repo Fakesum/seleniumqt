@@ -167,6 +167,23 @@ class Tests(unittest.TestCase):
 
     # TODO: TEST the click case for xpath.
 
+    def test_hide_and_show_1(self):
+        self.__ensure_driver()
+        
+        self.driver.open("https://www.google.com/")
+        self.driver.hide_window()
+        if input("Was the window hidden :- ").lower() in ['n', 'no']:
+            logger.error("The window was not hidden")
+            self.fail("According to the user, the window was not hidden")
+        
+        self.driver.show_window()
+
+        if input("was the window shown again :- ").lower() in ['n', 'no']:
+            logger.error("The window was not shown again")
+            self.fail("According to the user, the window was not shown again.")
+        
+        logger.success("Passed test_hide_and_show")
+
 
 def main():
     """Run unit Tests."""
