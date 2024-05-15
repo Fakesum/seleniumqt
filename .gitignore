@@ -9,3 +9,7 @@
 *.egg*
 
 **/__pycache__
+
+.*/
+
+.vscode/
