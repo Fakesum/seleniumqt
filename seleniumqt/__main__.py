@@ -11,7 +11,8 @@ def __external_import():
 
 __external_import()
 
-from seleniumqt.tests import main as _main, Tests
+from seleniumqt.tests import main as _main
+from seleniumqt.tests import *
 
 
 def main():
