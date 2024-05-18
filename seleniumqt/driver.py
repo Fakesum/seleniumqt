@@ -13,6 +13,7 @@ import os as _os
 import typing as _typing
 import time as _time
 import contextlib as _contextlib
+import math as _math
 
 # import _socket for communication with remote
 import socket as _socket
@@ -29,6 +30,8 @@ from .logger import logger
 # import exceptions
 from .exception import RemoteExited, InvalidUrl
 
+# import driver-remote communication class
+from .comms import DriverComs
 
 # Driver Class.
 class Driver:
@@ -55,6 +58,11 @@ class Driver:
 
     JAVASCRIPT_GET_HTML = '''return document.querySelector("html").outerHTML;'''
 
+    # -----------------------------------------utility constants------------------------------------------
+
+    XPATH = "xpath"
+    CSS = "css "
+
     # -----------------------------------------utility functions------------------------------------------
     @_contextlib.contextmanager
     def __temp_file(self, file_name=None):
@@ -75,14 +83,17 @@ class Driver:
         self.conn_sock.listen()
         conn, _ = self.conn_sock.accept()
 
+        _conn: DriverComs | _typing.Any = DriverComs(conn)
+
         while conn:
+            
             while self._commands == []:
                 _time.sleep(1)
             for command in self._commands:
-                conn.send(command.encode("utf-8"))
+                _conn.send(command)
                 try:
                     self._results.update(
-                        {command: conn.recv(1024).decode("utf-8")}
+                        {command: _conn.recv().decode("utf-8")}
                     )
                 except ConnectionResetError as e:
                     logger.exception(str(e))
@@ -301,7 +312,7 @@ class Driver:
         selector: str,
         _type: _typing.Literal["css "] | _typing.Literal["xpath"] = "css ",
         /,
-    ) -> None:  # noqa - untested #TODO: debug here.
+    ) -> None:
         """Click an element on screen, this uses the QEvent.Type.MouseButtonPressed, not javascript. so this click event is indistiguishable from a real click.
 
         # Usage
@@ -315,7 +326,7 @@ class Driver:
 
         # Args:
             selector (str): the selector for the element that is to be clicked.
-            _type (_typing.Literal['css'] | _typing.Literal['xpath], optional): in what format is the selector given, css, xpath, etc. Defaults to 'css '.
+            _type (_typing.Literal['css'] | _typing.Literal['xpath'], optional): in what format is the selector given, css, xpath, etc. Defaults to 'css '.
         """
         self.execute("click", _type + selector)
 
@@ -367,10 +378,13 @@ class Driver:
     def close(self) -> None:
         self.execute("close")
 
+    @logger.catch(reraise=True)
     def current_url(self) -> str:
         return self.execute("current_url")
 
+    @logger.catch(reraise=True)
     def page_html(self):
+        """get page html."""
         return self.execute_script(self.JAVASCRIPT_GET_HTML)
 
     @property

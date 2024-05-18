@@ -14,6 +14,7 @@ import typing as _typing
 import threading as _threading
 import enum as _enum
 import multiprocessing as _multiprocessing
+import math as _math
 import importlib as _importlib
 
 # import Qt
@@ -29,13 +30,14 @@ from .exception import (
     JavascriptException,
     InvalidSelectorType,
     NullPageError,
-    InternalWidgitNotFound,
     SetPageEror,
     DataNotGiven,
 )
 
 # import logger
 from .logger import logger
+
+from .comms import DriverComs
 
 
 class WindowMode(_enum.IntEnum):
@@ -144,8 +146,6 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
     """
 
     # -----------------------------------------utility functions------------------------------------------
-    def __create_temp_file(self): #TODO: HERE.
-        return ("".join(_random.sample("qwertyuiopasdfghjklzxcvbnm1234567890", k=20)))+".temp"
     def __raise(self, e: Exception):
         logger.exception(str(e))
         raise e
@@ -351,7 +351,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         return True
 
     @logger.catch(reraise=True)
-    def __click_element(self, selector: str) -> bool:  # noqa - untested #TODO: debug here.
+    def __click_element(self, selector: str) -> bool:
         """Send a QMouseClick Event to the QApplication, at the point of the element's position.
 
         The element is gotten from the selector.
@@ -418,16 +418,18 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         """
         logger.info("Started Remote Command Client")
 
+        self._conn = DriverComs(self.conn)
+
         while self.conn:
-            message: bytes = self.conn.recv(1024)
+            message: bytes = self._conn.recv()
             self.command = message.decode("utf-8")
             logger.info(f"Executing Command: {self.command}")
 
             while self.result == self.__Nothing:
                 _time.sleep(0.5)
 
-            self.conn.send(
-                self.result.encode("utf-8") if self.result != None else b"done"
+            self._conn.send(
+                self.result.encode("utf-8") if self.result != None else b''
             )
             self.result = self.__Nothing
 
@@ -574,6 +576,7 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self._element_pos = None
         self._element_pos_started: bool = False
 
+
         # the result of the command given
         self.result: self.__Nothing | str | _typing.Any = self.__Nothing
 
@@ -589,6 +592,8 @@ class Remote(_QtWebEngineWidgets.QWebEngineView):
         self.conn: _socket.socket = _socket.socket(
             _socket.AF_INET, _socket.SOCK_STREAM
         )
+        self._conn: DriverComs | _typing.Any = None
+
         self.conn.connect(
             ("localhost", self.__get_data("connection_port", True))
         )
