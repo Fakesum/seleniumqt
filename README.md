@@ -31,7 +31,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/fakesum/seleniumqt">
-    <img src="https://github.com/mrdbourke/pytorch-deep-learning/blob/main/images/04-pizza-dad.jpeg?raw=true" alt="Logo" width=300>
+    <img src="https://github.com/Fakesum/seleniumqt/blob/main/doc/logo/png/black-bg.png?raw=true" alt="Logo" width=300>
   </a>
 
 <h3 align="center">seleniumqt</h3>
